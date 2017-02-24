@@ -21,6 +21,28 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
+// (obj_fh, access, cb(err, access, obj_attr) )
+NAN_METHOD(NFS::Client::Access3) {
+    bool typeError = true;
+    if ( info.Length() != 3) {
+        Nan::ThrowTypeError("Must be called with 3 parameters");
+        return;
+    }
+    if (!info[0]->IsUint8Array())
+        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
+    else if (!info[1]->IsUint32())
+        Nan::ThrowTypeError("Parameter 2, access must be a unsigned integer");
+    else if (!info[2]->IsFunction())
+        Nan::ThrowTypeError("Parameter 3, cb must be a function");
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[2].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::Access3Worker(obj, info[0], info[1], callback));
+}
+
 NFS::Access3Worker::Access3Worker(NFS::Client *client_,
                                 const v8::Local<v8::Value> &obj_fh_,
                                 const v8::Local<v8::Value> &access_,

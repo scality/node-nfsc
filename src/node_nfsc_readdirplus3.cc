@@ -22,6 +22,35 @@
 #include "node_nfsc_fattr3.h"
 #include <nfsc/libnfs.h>
 
+// (dir_fh, cookie, cookieverf, dircount, maxcount, cb(err, dir_attrs, eof, [{ handle, attrs, cookie, fileid, name}, ... ]))
+NAN_METHOD(NFS::Client::ReadDirPlus3) {
+    if ( info.Length() != 6 )
+      {
+        Nan::ThrowTypeError("Must be called with 6 parameters");
+        return;
+      }
+    bool typeError = true;
+    if (!info[0]->IsUint8Array())
+        Nan::ThrowTypeError("Parameter 1, dir_fh must be a Buffer");
+    if (!info[1]->IsUint8Array() && !info[1]->IsNull())
+        Nan::ThrowTypeError("Parameter 2, cookie must be a Buffer or null");
+    if (!info[2]->IsUint8Array() && !info[2]->IsNull())
+        Nan::ThrowTypeError("Parameter 3, cookieverf must be a Buffer or null");
+    if (!info[3]->IsUint32())
+        Nan::ThrowTypeError("Parameter 4, dircount must be a unsigned integer");
+    if (!info[4]->IsUint32())
+        Nan::ThrowTypeError("Parameter 5, maxcount must be a unsigned integer");
+    else if (!info[5]->IsFunction())
+        Nan::ThrowTypeError("Parameter 6, cb must be a function");
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[5].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::ReadDirPlus3Worker(obj, info[0], info[1], info[2],
+            info[3], info[4], callback));
+}
 
 static v8::Local<v8::Array>
 readdirplus_entries(READDIRPLUS3res *res)

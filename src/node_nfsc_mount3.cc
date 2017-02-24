@@ -23,6 +23,25 @@
 #include "mount3.h"
 #include "nfs3.h"
 
+// ( cb(err, root_fh) )
+NAN_METHOD(NFS::Client::Mount3) {
+    bool typeError = true;
+    if ( info.Length() != 1 ) {
+        Nan::ThrowTypeError("Must be called with 1 parameters");
+        return;
+      }
+    if (!info[0]->IsFunction()) {
+        Nan::ThrowTypeError("Parameter 1, cb must be a function");
+    }
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[0].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::Mount3Worker(obj, callback));
+}
+
 AUTH *NFS::Mount3Worker::createUnixAuth(int uid, int gid)
 {
     char machname[MAX_MACHINE_NAME +1];

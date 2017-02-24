@@ -21,6 +21,30 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
+// (obj_fh, count, offset, cb(err, eof, buf, obj_attr) )
+NAN_METHOD(NFS::Client::Read3) {
+    bool typeError = true;
+    if ( info.Length() != 4) {
+        Nan::ThrowTypeError("Must be called with 4 parameters");
+        return;
+    }
+    if (!info[0]->IsUint8Array())
+        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
+    else if (!info[1]->IsNumber())
+        Nan::ThrowTypeError("Parameter 2, count must be a unsigned integer");
+    else if (!info[2]->IsNumber())
+        Nan::ThrowTypeError("Parameter 3, offset must be a unsigned integer");
+    else if (!info[3]->IsFunction())
+        Nan::ThrowTypeError("Parameter 4, cb must be a function");
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[3].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::Read3Worker(obj, info[0], info[1], info[2], callback));
+}
+
 NFS::Read3Worker::Read3Worker(NFS::Client *client_,
                             const v8::Local<v8::Value> &obj_fh_,
                             const v8::Local<v8::Value> &count_,

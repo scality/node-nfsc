@@ -83,15 +83,17 @@ private:
            const v8::Local<v8::Value> &timeout_);
     ~Client() override;
 
-    static NAN_METHOD(Null);
     static NAN_METHOD(New);
-    static NAN_METHOD(Mount);
-    static NAN_METHOD(Lookup);
-    static NAN_METHOD(GetAttr);
-    static NAN_METHOD(ReadDir);
-    static NAN_METHOD(ReadDirPlus);
-    static NAN_METHOD(Access);
-    static NAN_METHOD(Read);
+
+    /* NFSv3 RPCs */
+    static NAN_METHOD(Null3);
+    static NAN_METHOD(Mount3);
+    static NAN_METHOD(Lookup3);
+    static NAN_METHOD(GetAttr3);
+    static NAN_METHOD(ReadDir3);
+    static NAN_METHOD(ReadDirPlus3);
+    static NAN_METHOD(Access3);
+    static NAN_METHOD(Read3);
 
     /*
     static NAN_METHOD(ReadLink);

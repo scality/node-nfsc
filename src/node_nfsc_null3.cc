@@ -21,6 +21,24 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
+// ( cb(err) )
+NAN_METHOD(NFS::Client::Null3) {
+    bool typeError = true;
+    if ( info.Length() != 1) {
+        Nan::ThrowTypeError("Must be called with 1 parameters");
+        return;
+    }
+    if (!info[0]->IsFunction())
+        Nan::ThrowTypeError("Parameter 1, cb must be a function");
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[0].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::Null3Worker(obj, callback));
+}
+
 NFS::Null3Worker::Null3Worker(NFS::Client *client_,
                                 Nan::Callback *callback)
     : Nan::AsyncWorker(callback),

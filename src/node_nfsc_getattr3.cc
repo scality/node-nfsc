@@ -21,6 +21,26 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
+// (obj_fh,cb(err, obj_attr) )
+NAN_METHOD(NFS::Client::GetAttr3) {
+    bool typeError = true;
+    if ( info.Length() != 2) {
+        Nan::ThrowTypeError("Must be called with 2 parameters");
+        return;
+    }
+    if (!info[0]->IsUint8Array())
+        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
+    else if (!info[1]->IsFunction())
+        Nan::ThrowTypeError("Parameter 2, cb must be a function");
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[1].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::GetAttr3Worker(obj, info[0], callback));
+}
+
 NFS::GetAttr3Worker::GetAttr3Worker(NFS::Client *client_,
                                 const v8::Local<v8::Value> &obj_fh_,
                                 Nan::Callback *callback)

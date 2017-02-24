@@ -17,14 +17,6 @@
  *    Guillaume Gimenez <ggim@scality.com>
  */
 #include "node_nfsc.h"
-#include "node_nfsc_null3.h"
-#include "node_nfsc_mount3.h"
-#include "node_nfsc_lookup3.h"
-#include "node_nfsc_getattr3.h"
-#include "node_nfsc_readdir3.h"
-#include "node_nfsc_readdirplus3.h"
-#include "node_nfsc_read3.h"
-#include "node_nfsc_access3.h"
 #include <gssrpc/rpc.h>
 #include "mount3.h"
 #include "nfs3.h"
@@ -34,14 +26,14 @@ NAN_MODULE_INIT(NFS::Client::Init) {
     tpl->SetClassName(Nan::New("Client").ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-    SetPrototypeMethod(tpl, "null3", Null);
-    SetPrototypeMethod(tpl, "mount3", Mount);
-    SetPrototypeMethod(tpl, "lookup3", Lookup);
-    SetPrototypeMethod(tpl, "getattr3", GetAttr);
-    SetPrototypeMethod(tpl, "readdir3", ReadDir);
-    SetPrototypeMethod(tpl, "readdirplus3", ReadDirPlus);
-    SetPrototypeMethod(tpl, "access3", Access);
-    SetPrototypeMethod(tpl, "read3", Read);
+    SetPrototypeMethod(tpl, "null3", Null3);
+    SetPrototypeMethod(tpl, "mount3", Mount3);
+    SetPrototypeMethod(tpl, "lookup3", Lookup3);
+    SetPrototypeMethod(tpl, "getattr3", GetAttr3);
+    SetPrototypeMethod(tpl, "readdir3", ReadDir3);
+    SetPrototypeMethod(tpl, "readdirplus3", ReadDirPlus3);
+    SetPrototypeMethod(tpl, "access3", Access3);
+    SetPrototypeMethod(tpl, "read3", Read3);
 
     constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
     Nan::Set(target, Nan::New("Client").ToLocalChecked(),
@@ -219,188 +211,6 @@ NAN_METHOD(NFS::Client::New) {
         info.GetReturnValue().Set(Nan::NewInstance(cons, argc, argv)
                                   .ToLocalChecked());
     }
-}
-
-// (cb(err) )
-NAN_METHOD(NFS::Client::Null) {
-    bool typeError = true;
-    if ( info.Length() != 1) {
-        Nan::ThrowTypeError("Must be called with 1 parameters");
-        return;
-    }
-    if (!info[0]->IsFunction())
-        Nan::ThrowTypeError("Parameter 1, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[0].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::Null3Worker(obj, callback));
-}
-
-// ( cb(err, root_fh) )
-NAN_METHOD(NFS::Client::Mount) {
-    bool typeError = true;
-    if ( info.Length() != 1 ) {
-        Nan::ThrowTypeError("Must be called with 1 parameters");
-        return;
-      }
-    if (!info[0]->IsFunction()) {
-        Nan::ThrowTypeError("Parameter 1, cb must be a function");
-    }
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[0].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::Mount3Worker(obj, callback));
-}
-
-// (parent_fh, name, cb(err, obj_fh, obj_attr, dir_attr) )
-NAN_METHOD(NFS::Client::Lookup) {
-    bool typeError = true;
-    if ( info.Length() != 3) {
-        Nan::ThrowTypeError("Must be called with 3 parameters");
-        return;
-    }
-    if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, parent_fh must be a Buffer");
-    else if (!info[1]->IsString())
-        Nan::ThrowTypeError("Parameter 2, name must be a string");
-    else if (!info[2]->IsFunction())
-        Nan::ThrowTypeError("Parameter 3, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[2].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::Lookup3Worker(obj, info[0], info[1], callback));
-}
-
-// (obj_fh,cb(err, obj_attr) )
-NAN_METHOD(NFS::Client::GetAttr) {
-    bool typeError = true;
-    if ( info.Length() != 2) {
-        Nan::ThrowTypeError("Must be called with 2 parameters");
-        return;
-    }
-    if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
-    else if (!info[1]->IsFunction())
-        Nan::ThrowTypeError("Parameter 2, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[1].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::GetAttr3Worker(obj, info[0], callback));
-}
-
-// (dir_fh, cookie, cookieverf, count, cb(err, dir_attrs, eof, [{ cookie, fileid, name}, ... ]))
-NAN_METHOD(NFS::Client::ReadDir) {
-    if ( info.Length() != 5 )
-      {
-        Nan::ThrowTypeError("Must be called with 5 parameters");
-        return;
-      }
-    bool typeError = true;
-    if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, dir_fh must be a Buffer");
-    if (!info[1]->IsUint8Array() && !info[1]->IsNull())
-        Nan::ThrowTypeError("Parameter 2, cookie must be a Buffer or null");
-    if (!info[2]->IsUint8Array() && !info[2]->IsNull())
-        Nan::ThrowTypeError("Parameter 3, cookieverf must be a Buffer or null");
-    if (!info[3]->IsUint32())
-        Nan::ThrowTypeError("Parameter 4, count must be a unsigned integer");
-    else if (!info[4]->IsFunction())
-        Nan::ThrowTypeError("Parameter 5, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[4].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::ReadDir3Worker(obj, info[0], info[1], info[2], info[3], callback));
-}
-
-// (dir_fh, cookie, cookieverf, dircount, maxcount, cb(err, dir_attrs, eof, [{ handle, attrs, cookie, fileid, name}, ... ]))
-NAN_METHOD(NFS::Client::ReadDirPlus) {
-    if ( info.Length() != 6 )
-      {
-        Nan::ThrowTypeError("Must be called with 6 parameters");
-        return;
-      }
-    bool typeError = true;
-    if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, dir_fh must be a Buffer");
-    if (!info[1]->IsUint8Array() && !info[1]->IsNull())
-        Nan::ThrowTypeError("Parameter 2, cookie must be a Buffer or null");
-    if (!info[2]->IsUint8Array() && !info[2]->IsNull())
-        Nan::ThrowTypeError("Parameter 3, cookieverf must be a Buffer or null");
-    if (!info[3]->IsUint32())
-        Nan::ThrowTypeError("Parameter 4, dircount must be a unsigned integer");
-    if (!info[4]->IsUint32())
-        Nan::ThrowTypeError("Parameter 5, maxcount must be a unsigned integer");
-    else if (!info[5]->IsFunction())
-        Nan::ThrowTypeError("Parameter 6, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[5].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::ReadDirPlus3Worker(obj, info[0], info[1], info[2],
-            info[3], info[4], callback));
-}
-
-// (obj_fh, access, cb(err, access, obj_attr) )
-NAN_METHOD(NFS::Client::Access) {
-    bool typeError = true;
-    if ( info.Length() != 3) {
-        Nan::ThrowTypeError("Must be called with 3 parameters");
-        return;
-    }
-    if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
-    else if (!info[1]->IsUint32())
-        Nan::ThrowTypeError("Parameter 2, access must be a unsigned integer");
-    else if (!info[2]->IsFunction())
-        Nan::ThrowTypeError("Parameter 3, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[2].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::Access3Worker(obj, info[0], info[1], callback));
-}
-
-// (obj_fh, count, offset, cb(err, eof, buf, obj_attr) )
-NAN_METHOD(NFS::Client::Read) {
-    bool typeError = true;
-    if ( info.Length() != 4) {
-        Nan::ThrowTypeError("Must be called with 4 parameters");
-        return;
-    }
-    if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
-    else if (!info[1]->IsNumber())
-        Nan::ThrowTypeError("Parameter 2, count must be a unsigned integer");
-    else if (!info[2]->IsNumber())
-        Nan::ThrowTypeError("Parameter 3, offset must be a unsigned integer");
-    else if (!info[3]->IsFunction())
-        Nan::ThrowTypeError("Parameter 4, cb must be a function");
-    else
-        typeError = false;
-    if (typeError)
-        return;
-    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
-    Nan::Callback *callback = new Nan::Callback(info[3].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::Read3Worker(obj, info[0], info[1], info[2], callback));
 }
 
 NODE_MODULE(NFS, NFS::Client::Init)

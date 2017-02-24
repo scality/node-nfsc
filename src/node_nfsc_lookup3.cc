@@ -21,6 +21,28 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
+// (parent_fh, name, cb(err, obj_fh, obj_attr, dir_attr) )
+NAN_METHOD(NFS::Client::Lookup3) {
+    bool typeError = true;
+    if ( info.Length() != 3) {
+        Nan::ThrowTypeError("Must be called with 3 parameters");
+        return;
+    }
+    if (!info[0]->IsUint8Array())
+        Nan::ThrowTypeError("Parameter 1, parent_fh must be a Buffer");
+    else if (!info[1]->IsString())
+        Nan::ThrowTypeError("Parameter 2, name must be a string");
+    else if (!info[2]->IsFunction())
+        Nan::ThrowTypeError("Parameter 3, cb must be a function");
+    else
+        typeError = false;
+    if (typeError)
+        return;
+    NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
+    Nan::Callback *callback = new Nan::Callback(info[2].As<v8::Function>());
+    Nan::AsyncQueueWorker(new NFS::Lookup3Worker(obj, info[0], info[1], callback));
+}
+
 NFS::Lookup3Worker::Lookup3Worker(NFS::Client *client_,
                                 const v8::Local<v8::Value> &parent_fh_,
                                 const v8::Local<v8::Value> &name_,
