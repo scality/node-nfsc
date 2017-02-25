@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * @authors:
+ *    Vianney Rancurel <vr@scality.com>
  *    Guillaume Gimenez <ggim@scality.com>
  */
 #include "node_nfsc_mount3.h"
@@ -23,7 +24,7 @@
 #include "mount3.h"
 #include "nfs3.h"
 
-// ( cb(err, root_fh) )
+// ( callback(err, root_fh) )
 NAN_METHOD(NFS::Client::Mount3) {
     bool typeError = true;
     if ( info.Length() != 1 ) {
@@ -31,7 +32,7 @@ NAN_METHOD(NFS::Client::Mount3) {
         return;
       }
     if (!info[0]->IsFunction()) {
-        Nan::ThrowTypeError("Parameter 1, cb must be a function");
+        Nan::ThrowTypeError("Parameter 1, callback must be a function");
     }
     else
         typeError = false;
@@ -48,7 +49,7 @@ AUTH *NFS::Mount3Worker::createUnixAuth(int uid, int gid)
     int gids[1];
 
     if(gethostname(machname, MAX_MACHINE_NAME) == -1) {
-        asprintf(&error, "create_unix_auth: cannot get hostname");
+        asprintf(&error, NFSC_EGETHOSTNAME);
         return NULL;
     }
 
@@ -79,7 +80,7 @@ CLIENT *NFS::Mount3Worker::createMountClient()
         ret = gethostbyname_r(host, &hp, hostBuf, sizeof hostBuf, &result, &err);
         if (ret != 0 || result == NULL)
         {
-            asprintf(&error, "Unable to resolve host %s: %s", host, strerror(err));
+            asprintf(&error, NFSC_EGETHOSTBYNAME": %s: %s", host, strerror(err));
             return(NULL);
         }
         memmove(&server_addr.sin_addr.s_addr, hp.h_addr, hp.h_length);
@@ -148,7 +149,7 @@ CLIENT *NFS::Mount3Worker::createNfsClient()
         ret = gethostbyname_r(host, &hp, hostBuf, sizeof hostBuf, &result, &err);
         if (ret != 0 || result == NULL)
         {
-            asprintf(&error, "Unable to resolve host %s: %s", host, strerror(err));
+            asprintf(&error, NFSC_EGETHOSTBYNAME": %s: %s", host, strerror(err));
             return(NULL);
         }
         memmove(&server_addr.sin_addr.s_addr, hp.h_addr, hp.h_length);
@@ -182,7 +183,6 @@ CLIENT *NFS::Mount3Worker::createNfsClient()
     }
 
     clnt_control(nfsclient, CLSET_TIMEOUT, (char *) &timeout);
-    /*   clnt_control(nfsclient, CLSET_RETRY_TIMEOUT, &rtimeout);*/
 
     if (0 == strcmp(authMethod, "none") ) {
         nfsclient->cl_auth = authnone_create();
@@ -249,13 +249,13 @@ bool NFS::Mount3Worker::mount()
     state = mountproc3_mnt_3(const_cast<char**>(&dir), &mount_point, mntclient);
     if (state != RPC_SUCCESS)
       {
-        asprintf(&error, "Mount RPC did not succeed: %s", rpc_error(state));
+        asprintf(&error, "%s", rpc_error(state));
         goto bad;
       }
 
     if (MNT3_OK != mount_point.fhs_status)
       {
-        asprintf(&error, "mount failed %s", mnt3_error(mount_point.fhs_status));
+        asprintf(&error, "%s", mnt3_error(mount_point.fhs_status));
         goto bad;
       }
     isMounted = true;
@@ -273,13 +273,13 @@ bool NFS::Mount3Worker::mount()
  }
     if (state != RPC_SUCCESS)
       {
-        asprintf(&error, "getattr RPC did not succeed: %s", rpc_error(state));
+        asprintf(&error, "%s", rpc_error(state));
         goto bad;
       }
 
     if (NFS3_OK != attr.status)
       {
-        asprintf(&error, "getattr failed %s\n", nfs3_error(attr.status));
+        asprintf(&error, "%s", nfs3_error(attr.status));
         goto bad;
       }
     client->setClient(nfsclient);
@@ -329,7 +329,7 @@ NFS::Mount3Worker::~Mount3Worker()
 void NFS::Mount3Worker::Execute()
 {
     if (client->isMounted()) {
-        asprintf(&error, "Already mounted");
+        asprintf(&error, NFSC_ALREADY_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -353,7 +353,7 @@ void NFS::Mount3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }

@@ -80,7 +80,7 @@ rpc_error(clnt_stat stat)
     case RPC_FAILED:
         return "RPC_FAILED";
     default:
-        return "RPC unknown error";
+        return "RPC_UNKNOWN_ERROR";
     }
 }
 
@@ -110,7 +110,7 @@ mnt3_error(mountstat3 stat)
     case MNT3ERR_SERVERFAULT:
         return "MNT3ERR_SERVERFAULT";
     default:
-        return "MNT3 unknown error";
+        return "MNT3ERR_UNKNOWN_ERROR";
     }
 }
 
@@ -178,6 +178,6 @@ nfs3_error(nfsstat3 stat)
     case NFS3ERR_JUKEBOX:
         return "NFS3ERR_JUKEBOX";
     default:
-        return "NFS3 unknown error";
+        return "NFS3ERR_UNKNOWN_ERROR";
     }
 }

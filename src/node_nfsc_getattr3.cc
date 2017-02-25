@@ -21,7 +21,7 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
-// (obj_fh,cb(err, obj_attr) )
+// (object, callback(err, obj_attr) )
 NAN_METHOD(NFS::Client::GetAttr3) {
     bool typeError = true;
     if ( info.Length() != 2) {
@@ -29,9 +29,9 @@ NAN_METHOD(NFS::Client::GetAttr3) {
         return;
     }
     if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
+        Nan::ThrowTypeError("Parameter 1, object must be a Buffer");
     else if (!info[1]->IsFunction())
-        Nan::ThrowTypeError("Parameter 2, cb must be a function");
+        Nan::ThrowTypeError("Parameter 2, callback must be a function");
     else
         typeError = false;
     if (typeError)
@@ -64,7 +64,7 @@ NFS::GetAttr3Worker::~GetAttr3Worker()
 void NFS::GetAttr3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, "Not mounted");
+        asprintf(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -73,11 +73,11 @@ void NFS::GetAttr3Worker::Execute()
     args.object = obj_fh;
     stat = nfsproc3_getattr_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "RPC: getattr failure: %s", rpc_error(stat));
+        asprintf(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "NFS: getattr failure: %s", nfs3_error(res.status));
+        asprintf(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -97,7 +97,7 @@ void NFS::GetAttr3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }

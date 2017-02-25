@@ -21,7 +21,7 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
-// ( cb(err) )
+// ( callback(err) )
 NAN_METHOD(NFS::Client::Null3) {
     bool typeError = true;
     if ( info.Length() != 1) {
@@ -29,7 +29,7 @@ NAN_METHOD(NFS::Client::Null3) {
         return;
     }
     if (!info[0]->IsFunction())
-        Nan::ThrowTypeError("Parameter 1, cb must be a function");
+        Nan::ThrowTypeError("Parameter 1, callback must be a function");
     else
         typeError = false;
     if (typeError)
@@ -55,14 +55,14 @@ NFS::Null3Worker::~Null3Worker()
 void NFS::Null3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, "Not mounted");
+        asprintf(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
     clnt_stat stat;
     stat = nfsproc3_null_3(nullptr, nullptr, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "RPC: getattr failure: %s", rpc_error(stat));
+        asprintf(&error, "%s", rpc_error(stat));
         return;
     }
     success = true;
@@ -79,7 +79,7 @@ void NFS::Null3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }

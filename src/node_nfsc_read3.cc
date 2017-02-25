@@ -21,7 +21,7 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
-// (obj_fh, count, offset, cb(err, eof, buf, obj_attr) )
+// (object, count, offset, callback(err, eof, buf, obj_attr) )
 NAN_METHOD(NFS::Client::Read3) {
     bool typeError = true;
     if ( info.Length() != 4) {
@@ -29,13 +29,13 @@ NAN_METHOD(NFS::Client::Read3) {
         return;
     }
     if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
+        Nan::ThrowTypeError("Parameter 1, object must be a Buffer");
     else if (!info[1]->IsNumber())
         Nan::ThrowTypeError("Parameter 2, count must be a unsigned integer");
     else if (!info[2]->IsNumber())
         Nan::ThrowTypeError("Parameter 3, offset must be a unsigned integer");
     else if (!info[3]->IsFunction())
-        Nan::ThrowTypeError("Parameter 4, cb must be a function");
+        Nan::ThrowTypeError("Parameter 4, callback must be a function");
     else
         typeError = false;
     if (typeError)
@@ -72,15 +72,15 @@ NFS::Read3Worker::~Read3Worker()
 void NFS::Read3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, "Not mounted");
+        asprintf(&error, NFSC_NOT_MOUNTED);
         return;
     }
     if (count == (uint64_t)-1) {
-        asprintf(&error, "count: ERANGE");
+        asprintf(&error, NFSC_ERANGE);
         return;
     }
     if (offset == (uint64_t)-1) {
-        asprintf(&error, "offset: ERANGE");
+        asprintf(&error, NFSC_ERANGE);
         return;
     }
     Serialize my(client);
@@ -91,11 +91,11 @@ void NFS::Read3Worker::Execute()
     clnt_stat stat;
     stat = nfsproc3_read_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "RPC: read failure: %s", rpc_error(stat));
+        asprintf(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "NFS: read failure: %s", nfs3_error(res.status));
+        asprintf(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -105,8 +105,11 @@ void NFS::Read3Worker::HandleOKCallback()
 {
     Nan::HandleScope scope;
     if (success) {
-        v8::Local<v8::Object> obj_attrs =
-                node_nfsc_fattr3(res.READ3res_u.resok.file_attributes.post_op_attr_u.attributes);
+        v8::Local<v8::Value> obj_attrs;
+        if (res.READ3res_u.resok.file_attributes.attributes_follow)
+            obj_attrs = node_nfsc_fattr3(res.READ3res_u.resok.file_attributes.post_op_attr_u.attributes);
+        else
+            obj_attrs = Nan::Null();
         v8::Local<v8::Value> argv[] = {
             Nan::Null(),
             Nan::New(!!res.READ3res_u.resok.eof),
@@ -120,7 +123,7 @@ void NFS::Read3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }

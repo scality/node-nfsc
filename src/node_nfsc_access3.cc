@@ -21,7 +21,7 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
-// (obj_fh, access, cb(err, access, obj_attr) )
+// (object, access, callback(err, access, obj_attr|null) )
 NAN_METHOD(NFS::Client::Access3) {
     bool typeError = true;
     if ( info.Length() != 3) {
@@ -29,11 +29,11 @@ NAN_METHOD(NFS::Client::Access3) {
         return;
     }
     if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, obj_fh must be a Buffer");
+        Nan::ThrowTypeError("Parameter 1, object must be a Buffer");
     else if (!info[1]->IsUint32())
         Nan::ThrowTypeError("Parameter 2, access must be a unsigned integer");
     else if (!info[2]->IsFunction())
-        Nan::ThrowTypeError("Parameter 3, cb must be a function");
+        Nan::ThrowTypeError("Parameter 3, callback must be a function");
     else
         typeError = false;
     if (typeError)
@@ -68,7 +68,7 @@ NFS::Access3Worker::~Access3Worker()
 void NFS::Access3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, "Not mounted");
+        asprintf(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -78,11 +78,11 @@ void NFS::Access3Worker::Execute()
     args.access = access;
     stat = nfsproc3_access_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "RPC: access failure: %s", rpc_error(stat));
+        asprintf(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "NFS: access failure: %s", nfs3_error(res.status));
+        asprintf(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -92,8 +92,11 @@ void NFS::Access3Worker::HandleOKCallback()
 {
     Nan::HandleScope scope;
     if (success) {
-        v8::Local<v8::Object> obj_attrs =
-                node_nfsc_fattr3(res.ACCESS3res_u.resok.obj_attributes.post_op_attr_u.attributes);
+        v8::Local<v8::Value> obj_attrs;
+        if (res.ACCESS3res_u.resok.obj_attributes.attributes_follow)
+            obj_attrs = node_nfsc_fattr3(res.ACCESS3res_u.resok.obj_attributes.post_op_attr_u.attributes);
+        else
+            obj_attrs = Nan::Null();
         v8::Local<v8::Value> argv[] = {
             Nan::Null(),
             Nan::New(res.ACCESS3res_u.resok.access),
@@ -103,7 +106,7 @@ void NFS::Access3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }

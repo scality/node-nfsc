@@ -21,7 +21,7 @@
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
-// (parent_fh, name, cb(err, obj_fh, obj_attr, dir_attr) )
+// (dir, name, callback(err, obj_fh, obj_attr, dir_attr) )
 NAN_METHOD(NFS::Client::Lookup3) {
     bool typeError = true;
     if ( info.Length() != 3) {
@@ -29,11 +29,11 @@ NAN_METHOD(NFS::Client::Lookup3) {
         return;
     }
     if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, parent_fh must be a Buffer");
+        Nan::ThrowTypeError("Parameter 1, dir must be a Buffer");
     else if (!info[1]->IsString())
         Nan::ThrowTypeError("Parameter 2, name must be a string");
     else if (!info[2]->IsFunction())
-        Nan::ThrowTypeError("Parameter 3, cb must be a function");
+        Nan::ThrowTypeError("Parameter 3, callback must be a function");
     else
         typeError = false;
     if (typeError)
@@ -68,7 +68,7 @@ NFS::Lookup3Worker::~Lookup3Worker()
 void NFS::Lookup3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, "Not mounted");
+        asprintf(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -78,11 +78,11 @@ void NFS::Lookup3Worker::Execute()
     args.what.name = *name;
     stat = nfsproc3_lookup_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "RPC: lookup failure: %s", rpc_error(stat));
+        asprintf(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "NFS: lookup failure: %s", nfs3_error(res.status));
+        asprintf(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -92,10 +92,16 @@ void NFS::Lookup3Worker::HandleOKCallback()
 {
     Nan::HandleScope scope;
     if (success) {
-        v8::Local<v8::Object> obj_attrs =
-                node_nfsc_fattr3(res.LOOKUP3res_u.resok.obj_attributes.post_op_attr_u.attributes);
-        v8::Local<v8::Object> dir_attrs =
-                node_nfsc_fattr3(res.LOOKUP3res_u.resok.dir_attributes.post_op_attr_u.attributes);
+        v8::Local<v8::Value> obj_attrs;
+        v8::Local<v8::Value> dir_attrs;
+        if (res.LOOKUP3res_u.resok.obj_attributes.attributes_follow)
+            obj_attrs = node_nfsc_fattr3(res.LOOKUP3res_u.resok.obj_attributes.post_op_attr_u.attributes);
+        else
+            obj_attrs = Nan::Null();
+        if (res.LOOKUP3res_u.resok.dir_attributes.attributes_follow)
+            dir_attrs = node_nfsc_fattr3(res.LOOKUP3res_u.resok.dir_attributes.post_op_attr_u.attributes);
+        else
+            dir_attrs = Nan::Null();
         v8::Local<v8::Value> argv[] = {
             Nan::Null(),
             Nan::NewBuffer(res.LOOKUP3res_u.resok.object.data.data_val,
@@ -109,7 +115,7 @@ void NFS::Lookup3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }

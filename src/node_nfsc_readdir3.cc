@@ -22,7 +22,7 @@
 #include "node_nfsc_fattr3.h"
 #include <nfsc/libnfs.h>
 
-// (dir_fh, cookie, cookieverf, count, cb(err, dir_attrs, eof, [{ cookie, fileid, name}, ... ]))
+// (dir, cookie, cookieverf, count, callback(err, dir_attrs, eof, [{ cookie, fileid, name}, ... ]))
 NAN_METHOD(NFS::Client::ReadDir3) {
     if ( info.Length() != 5 )
       {
@@ -31,7 +31,7 @@ NAN_METHOD(NFS::Client::ReadDir3) {
       }
     bool typeError = true;
     if (!info[0]->IsUint8Array())
-        Nan::ThrowTypeError("Parameter 1, dir_fh must be a Buffer");
+        Nan::ThrowTypeError("Parameter 1, dir must be a Buffer");
     if (!info[1]->IsUint8Array() && !info[1]->IsNull())
         Nan::ThrowTypeError("Parameter 2, cookie must be a Buffer or null");
     if (!info[2]->IsUint8Array() && !info[2]->IsNull())
@@ -39,7 +39,7 @@ NAN_METHOD(NFS::Client::ReadDir3) {
     if (!info[3]->IsUint32())
         Nan::ThrowTypeError("Parameter 4, count must be a unsigned integer");
     else if (!info[4]->IsFunction())
-        Nan::ThrowTypeError("Parameter 5, cb must be a function");
+        Nan::ThrowTypeError("Parameter 5, callback must be a function");
     else
         typeError = false;
     if (typeError)
@@ -99,7 +99,7 @@ NFS::ReadDir3Worker::ReadDir3Worker(NFS::Client *client_,
     dir_fh.data.data_len = node::Buffer::Length(dir_fh_);
     if (!cookie_->IsNull()) {
         if (node::Buffer::Length(cookie_) != sizeof(cookie)) {
-            Nan::ThrowRangeError("cookie must be 8 bytes long");
+            asprintf(&error, NFSC_ERANGE);
             return;
         }
         memcpy(&cookie, node::Buffer::Data(cookie_), sizeof(cookie));
@@ -108,7 +108,7 @@ NFS::ReadDir3Worker::ReadDir3Worker(NFS::Client *client_,
     }
     if (!cookieverf_->IsNull()) {
         if (node::Buffer::Length(cookieverf_) != sizeof(cookieverf)) {
-            Nan::ThrowRangeError("cookieverf must be 8 bytes long");
+            asprintf(&error, NFSC_ERANGE);
             return;
         }
         memcpy(&cookieverf, node::Buffer::Data(cookieverf_), sizeof(cookieverf));
@@ -125,8 +125,10 @@ NFS::ReadDir3Worker::~ReadDir3Worker()
 
 void NFS::ReadDir3Worker::Execute()
 {
+    if (error)
+        return;
     if (!client->isMounted()) {
-        asprintf(&error, "Not mounted");
+        asprintf(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -138,11 +140,11 @@ void NFS::ReadDir3Worker::Execute()
     args.count = count;
     stat = nfsproc3_readdir_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "RPC: readdir failure: %s", rpc_error(stat));
+        asprintf(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "NFS: readdir failure: %s", nfs3_error(res.status));
+        asprintf(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -154,8 +156,11 @@ void NFS::ReadDir3Worker::HandleOKCallback()
     Nan::HandleScope scope;
     if (success) {
         v8::Local<v8::Array> entries = readdir_entries(&res);
-        v8::Local<v8::Object> dir_attrs =
-                node_nfsc_fattr3(res.READDIR3res_u.resok.dir_attributes.post_op_attr_u.attributes);
+        v8::Local<v8::Value> dir_attrs;
+        if (res.READDIR3res_u.resok.dir_attributes.attributes_follow)
+            dir_attrs = node_nfsc_fattr3(res.READDIR3res_u.resok.dir_attributes.post_op_attr_u.attributes);
+        else
+            dir_attrs = Nan::Null();
         v8::Local<v8::Value> argv[] = {
             Nan::Null(),
             dir_attrs,
@@ -166,7 +171,7 @@ void NFS::ReadDir3Worker::HandleOKCallback()
     }
     else {
         v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:"Unspecified error").ToLocalChecked()
+            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
         };
         callback->Call(1, argv);
     }
