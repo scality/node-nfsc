@@ -100,6 +100,8 @@ private:
     static NAN_METHOD(ReadDirPlus3);
     static NAN_METHOD(Access3);
     static NAN_METHOD(Read3);
+    static NAN_METHOD(Write3);
+    static NAN_METHOD(Commit3);
 
     /*
     static NAN_METHOD(ReadLink);
@@ -113,8 +115,6 @@ private:
     static NAN_METHOD(MkDir);
     static NAN_METHOD(RmDir);
     static NAN_METHOD(Rename);
-    static NAN_METHOD(Write);
-    static NAN_METHOD(Commit);
 
     static NAN_METHOD(SymLink);
     static NAN_METHOD(MkNod);

@@ -41,7 +41,7 @@ ftype3_str(ftype3 type)
     }
 }
 
-v8::Local<v8::Object> node_nfsc_fattr3(fattr3 &attr)
+v8::Local<v8::Object> node_nfsc_fattr3(const fattr3 &attr)
 {
     char *buf_fileid = (char*)malloc(sizeof(attr.fileid));
     char *buf_fsid = (char*)malloc(sizeof(attr.fsid));

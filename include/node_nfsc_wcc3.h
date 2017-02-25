@@ -21,4 +21,4 @@
 #include "nfs3.h"
 
 v8::Local<v8::Object>
-node_nfsc_fattr3(const fattr3 &attr);
+node_nfsc_wcc3(const wcc_attr& attr);

@@ -20,5 +20,30 @@
 #include <nan.h>
 #include "nfs3.h"
 
-v8::Local<v8::Object>
-node_nfsc_fattr3(const fattr3 &attr);
+
+namespace NFS {
+    class Client;
+
+    class Commit3Worker : public Nan::AsyncWorker {
+
+        Client *client;
+        bool success;
+        char *error;
+        nfs_fh3 obj_fh;
+        uint64_t count;
+        uint64_t offset;
+        COMMIT3res res;
+
+    public:
+
+        Commit3Worker(Client *client_,
+                      const v8::Local<v8::Value> &obj_fh_,
+                      const v8::Local<v8::Value> &count_,
+                      const v8::Local<v8::Value> &offset_,
+                      Nan::Callback *callback);
+        ~Commit3Worker() override;
+        void Execute() override;
+        void HandleOKCallback() override;
+
+    };
+}

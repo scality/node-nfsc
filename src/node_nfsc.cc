@@ -34,6 +34,8 @@ NAN_MODULE_INIT(NFS::Client::Init) {
     SetPrototypeMethod(tpl, "readdirplus3", ReadDirPlus3);
     SetPrototypeMethod(tpl, "access3", Access3);
     SetPrototypeMethod(tpl, "read3", Read3);
+    SetPrototypeMethod(tpl, "write3", Write3);
+    SetPrototypeMethod(tpl, "commit3", Commit3);
 
     constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
     Nan::Set(target, Nan::New("Client").ToLocalChecked(),

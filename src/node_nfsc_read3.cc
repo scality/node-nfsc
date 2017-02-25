@@ -66,7 +66,7 @@ NFS::Read3Worker::Read3Worker(NFS::Client *client_,
 NFS::Read3Worker::~Read3Worker()
 {
     free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_GETATTR3res, (char *) &res);
+    clnt_freeres(client->getClient(), (xdrproc_t) xdr_READ3res, (char *) &res);
 }
 
 void NFS::Read3Worker::Execute()
