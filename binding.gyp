@@ -25,6 +25,7 @@
                 "src/node_nfsc_write3.cc",
                 "src/node_nfsc_commit3.cc",
                 "src/node_nfsc_create3.cc",
+                "src/node_nfsc_remove3.cc",
             ],
             "cflags": [
                 "-Wno-unused-variable",

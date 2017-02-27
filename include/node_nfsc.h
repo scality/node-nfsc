@@ -103,6 +103,7 @@ private:
     static NAN_METHOD(Write3);
     static NAN_METHOD(Commit3);
     static NAN_METHOD(Create3);
+    static NAN_METHOD(Remove3);
 
     /*
     static NAN_METHOD(ReadLink);
@@ -111,7 +112,6 @@ private:
     static NAN_METHOD(PathConf);
 
     static NAN_METHOD(SetAttr);
-    static NAN_METHOD(Remove);
     static NAN_METHOD(MkDir);
     static NAN_METHOD(RmDir);
     static NAN_METHOD(Rename);
