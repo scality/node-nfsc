@@ -170,10 +170,10 @@ NFS::Client::Client(const v8::Local<v8::Value> &host_,
                     const v8::Local<v8::Value> &timeout_) :
     Nan::ObjectWrap(),
     sem(),
-    client(nullptr),
-    mntClient(nullptr),
+    client(NULL),
+    mntClient(NULL),
     mounted(false),
-    rootFh(nullptr),
+    rootFh(NULL),
     host(host_),
     exportPath(exportPath_),
     protocol(protocol_),
@@ -187,8 +187,8 @@ NFS::Client::Client(const v8::Local<v8::Value> &host_,
 
 NFS::Client::~Client()
 {
-    setClient(nullptr);
-    setMountClient(nullptr);
+    setClient(NULL);
+    setMountClient(NULL);
 }
 
 NAN_METHOD(NFS::Client::New) {

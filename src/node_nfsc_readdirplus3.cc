@@ -20,7 +20,6 @@
 #include "node_nfsc_readdirplus3.h"
 #include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
-#include <nfsc/libnfs.h>
 
 // (dir, cookie, cookieverf, dircount, maxcount, cb(err, dir_attrs, eof, [{ handle, attrs, cookie, fileid, name}, ... ]))
 NAN_METHOD(NFS::Client::ReadDirPlus3) {
@@ -87,7 +86,7 @@ readdirplus_entries(READDIRPLUS3res *res)
                   Nan::NewBuffer(entry->name_handle.post_op_fh3_u.handle.data.data_val,
                                  entry->name_handle.post_op_fh3_u.handle.data.data_len)
                   .ToLocalChecked());
-        entry->name_handle.post_op_fh3_u.handle.data.data_val = nullptr;
+        entry->name_handle.post_op_fh3_u.handle.data.data_val = NULL;
         list->Set(count++, item);
 
     }
@@ -104,7 +103,7 @@ NFS::ReadDirPlus3Worker::ReadDirPlus3Worker(NFS::Client *client_,
     : Nan::AsyncWorker(callback),
       client(client_),
       success(false),
-      error(nullptr),
+      error(NULL),
       dir_fh(),
       cookie(),
       cookieverf(),
@@ -116,7 +115,7 @@ NFS::ReadDirPlus3Worker::ReadDirPlus3Worker(NFS::Client *client_,
     dir_fh.data.data_len = node::Buffer::Length(dir_fh_);
     if (!cookie_->IsNull()) {
         if (node::Buffer::Length(cookie_) != sizeof(cookie)) {
-            asprintf(&error, NFSC_ERANGE);
+            NFSC_ASPRINTF(&error, NFSC_ERANGE);
             return;
         }
         memcpy(&cookie, node::Buffer::Data(cookie_), sizeof(cookie));
@@ -125,7 +124,7 @@ NFS::ReadDirPlus3Worker::ReadDirPlus3Worker(NFS::Client *client_,
     }
     if (!cookieverf_->IsNull()) {
         if (node::Buffer::Length(cookieverf_) != sizeof(cookieverf)) {
-            asprintf(&error, NFSC_ERANGE);
+            NFSC_ASPRINTF(&error, NFSC_ERANGE);
             return;
         }
         memcpy(&cookieverf[0], node::Buffer::Data(cookieverf_), sizeof(cookieverf));
@@ -145,7 +144,7 @@ void NFS::ReadDirPlus3Worker::Execute()
     if (error)
         return;
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -158,11 +157,11 @@ void NFS::ReadDirPlus3Worker::Execute()
     args.maxcount = maxcount;
     stat = nfsproc3_readdirplus_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "%s", nfs3_error(res.status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;

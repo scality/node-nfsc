@@ -68,7 +68,7 @@ NFS::Access3Worker::~Access3Worker()
 void NFS::Access3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -78,11 +78,11 @@ void NFS::Access3Worker::Execute()
     args.access = access;
     stat = nfsproc3_access_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "%s", nfs3_error(res.status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;

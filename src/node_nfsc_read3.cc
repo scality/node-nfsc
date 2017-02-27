@@ -72,15 +72,15 @@ NFS::Read3Worker::~Read3Worker()
 void NFS::Read3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     if (count == (uint64_t)-1) {
-        asprintf(&error, NFSC_ERANGE);
+        NFSC_ASPRINTF(&error, NFSC_ERANGE);
         return;
     }
     if (offset == (uint64_t)-1) {
-        asprintf(&error, NFSC_ERANGE);
+        NFSC_ASPRINTF(&error, NFSC_ERANGE);
         return;
     }
     Serialize my(client);
@@ -91,11 +91,11 @@ void NFS::Read3Worker::Execute()
     clnt_stat stat;
     stat = nfsproc3_read_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "%s", nfs3_error(res.status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -118,7 +118,7 @@ void NFS::Read3Worker::HandleOKCallback()
             obj_attrs
         };
         //data stolen by node
-        res.READ3res_u.resok.data.data_val = nullptr;
+        res.READ3res_u.resok.data.data_val = NULL;
         callback->Call(sizeof(argv)/sizeof(*argv), argv);
     }
     else {

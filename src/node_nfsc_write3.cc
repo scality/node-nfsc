@@ -72,15 +72,15 @@ NFS::Write3Worker::Write3Worker(NFS::Client *client_,
       res({})
 {
     if ( count == (uint64_t)-1) {
-        asprintf(&error, NFSC_ERANGE);
+        NFSC_ASPRINTF(&error, NFSC_ERANGE);
         return;
     }
     if (offset == (uint64_t)-1) {
-        asprintf(&error, NFSC_ERANGE);
+        NFSC_ASPRINTF(&error, NFSC_ERANGE);
         return;
     }
     if (node::Buffer::Length(data_) < count) {
-        asprintf(&error, NFSC_ERANGE);
+        NFSC_ASPRINTF(&error, NFSC_ERANGE);
         return;
     }
     switch (stable) {
@@ -109,7 +109,7 @@ void NFS::Write3Worker::Execute()
     if (error)
         return;
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
 
@@ -124,11 +124,11 @@ void NFS::Write3Worker::Execute()
     clnt_stat stat;
     stat = nfsproc3_write_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "%s", nfs3_error(res.status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;

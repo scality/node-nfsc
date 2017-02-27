@@ -19,6 +19,7 @@
 #pragma once
 #include <nan.h>
 #include "nfs3.h"
+#include "node_nfsc_port.h"
 
 
 namespace NFS {
@@ -46,9 +47,9 @@ namespace NFS {
                      const v8::Local<v8::Value> &stable_,
                      const v8::Local<v8::Value> &data_,
                      Nan::Callback *callback);
-        ~Write3Worker() override;
-        void Execute() override;
-        void HandleOKCallback() override;
+        ~Write3Worker() NFSC_OVERRIDE;
+        void Execute() NFSC_OVERRIDE;
+        void HandleOKCallback() NFSC_OVERRIDE;
 
     };
 }

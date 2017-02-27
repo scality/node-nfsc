@@ -19,6 +19,7 @@
 #pragma once
 #include <nan.h>
 #include "nfs3.h"
+#include "node_nfsc_port.h"
 
 
 namespace NFS {
@@ -34,9 +35,9 @@ namespace NFS {
 
         Unmount3Worker(Client *client_,
                      Nan::Callback *callback);
-        ~Unmount3Worker() override;
-        void Execute() override;
-        void HandleOKCallback() override;
+        ~Unmount3Worker() NFSC_OVERRIDE;
+        void Execute() NFSC_OVERRIDE;
+        void HandleOKCallback() NFSC_OVERRIDE;
 
     };
 }

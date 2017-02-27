@@ -18,7 +18,7 @@
  */
 #pragma once
 #include <nan.h>
-
+#include "node_nfsc_port.h"
 #include <gssrpc/rpc.h>
 
 
@@ -39,9 +39,9 @@ namespace NFS {
     public:
 
         Mount3Worker(Client *client_, Nan::Callback *callback);
-        ~Mount3Worker() override;
-        void Execute() override;
-        void HandleOKCallback() override;
+        ~Mount3Worker() NFSC_OVERRIDE;
+        void Execute() NFSC_OVERRIDE;
+        void HandleOKCallback() NFSC_OVERRIDE;
 
     };
 }

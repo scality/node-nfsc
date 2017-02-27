@@ -22,6 +22,7 @@
 #include <nan.h>
 #include "mount3.h"
 #include "nfs3.h"
+#include "node_nfsc_port.h"
 
 #define NFSC_NOT_MOUNTED "NFSC_NOT_MOUNTED"
 #define NFSC_ALREADY_MOUNTED "NFSC_ALREADY_MOUNTED"
@@ -90,7 +91,7 @@ private:
            const v8::Local<v8::Value> &gid_,
            const v8::Local<v8::Value> &authenticationMethod_,
            const v8::Local<v8::Value> &timeout_);
-    ~Client() override;
+    ~Client() NFSC_OVERRIDE;
 
     static NAN_METHOD(New);
 

@@ -49,7 +49,7 @@ AUTH *NFS::Mount3Worker::createUnixAuth(int uid, int gid)
     int gids[1];
 
     if(gethostname(machname, MAX_MACHINE_NAME) == -1) {
-        asprintf(&error, NFSC_EGETHOSTNAME);
+        NFSC_ASPRINTF(&error, NFSC_EGETHOSTNAME);
         return NULL;
     }
 
@@ -80,7 +80,7 @@ CLIENT *NFS::Mount3Worker::createMountClient()
         ret = gethostbyname_r(host, &hp, hostBuf, sizeof hostBuf, &result, &err);
         if (ret != 0 || result == NULL)
         {
-            asprintf(&error, NFSC_EGETHOSTBYNAME": %s: %s", host, strerror(err));
+            NFSC_ASPRINTF(&error, NFSC_EGETHOSTBYNAME": %s: %s", host, strerror(err));
             return(NULL);
         }
         memmove(&server_addr.sin_addr.s_addr, hp.h_addr, hp.h_length);
@@ -149,7 +149,7 @@ CLIENT *NFS::Mount3Worker::createNfsClient()
         ret = gethostbyname_r(host, &hp, hostBuf, sizeof hostBuf, &result, &err);
         if (ret != 0 || result == NULL)
         {
-            asprintf(&error, NFSC_EGETHOSTBYNAME": %s: %s", host, strerror(err));
+            NFSC_ASPRINTF(&error, NFSC_EGETHOSTBYNAME": %s: %s", host, strerror(err));
             return(NULL);
         }
         memmove(&server_addr.sin_addr.s_addr, hp.h_addr, hp.h_length);
@@ -207,7 +207,7 @@ CLIENT *NFS::Mount3Worker::createNfsClient()
         } else if (0 == strcmp(authMethod, "krb5p")) {
             sec.svc = RPCSEC_GSS_SVC_PRIVACY;
         } else {
-            asprintf(&error, "Invalid authentication method");
+            NFSC_ASPRINTF(&error, "Invalid authentication method");
             clnt_destroy(nfsclient);
             return(NULL);
         }
@@ -229,7 +229,6 @@ CLIENT *NFS::Mount3Worker::createNfsClient()
 
 bool NFS::Mount3Worker::mount()
 {
-    const char *host = client->getHost();
     const char *dir = client->getExportPath();
     CLIENT *mntclient = NULL;
     CLIENT *nfsclient = NULL;
@@ -251,14 +250,14 @@ bool NFS::Mount3Worker::mount()
     state = mountproc3_mnt_3(const_cast<char**>(&dir), &mount_point, mntclient);
     if (state != RPC_SUCCESS)
       {
-        asprintf(&error, "%s", rpc_error(state));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(state));
         goto bad;
       }
 
     freeMountRes = true;
     if (MNT3_OK != mount_point.fhs_status)
       {
-        asprintf(&error, "%s", mnt3_error(mount_point.fhs_status));
+        NFSC_ASPRINTF(&error, "%s", mnt3_error(mount_point.fhs_status));
         goto bad;
       }
     isMounted = true;
@@ -276,14 +275,14 @@ bool NFS::Mount3Worker::mount()
  }
     if (state != RPC_SUCCESS)
       {
-        asprintf(&error, "%s", rpc_error(state));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(state));
         goto bad;
       }
     status = attr.status;
     clnt_freeres(nfsclient, (xdrproc_t) xdr_GETATTR3res, (char*) &attr);
     if (NFS3_OK != status)
       {
-        asprintf(&error, "%s", nfs3_error(status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(status));
         goto bad;
       }
     clnt_freeres(mntclient, (xdrproc_t) xdr_mountres3, (char *)&mount_point);
@@ -334,7 +333,7 @@ NFS::Mount3Worker::~Mount3Worker()
 void NFS::Mount3Worker::Execute()
 {
     if (client->isMounted()) {
-        asprintf(&error, NFSC_ALREADY_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_ALREADY_MOUNTED);
         return;
     }
     Serialize my(client);

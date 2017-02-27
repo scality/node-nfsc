@@ -80,11 +80,10 @@ NFS::Rename3Worker::~Rename3Worker()
 void NFS::Rename3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
-    bool type_error = false;
     RENAME3args args;
     clnt_stat stat;
     args.from.dir = from_fh;
@@ -93,11 +92,11 @@ void NFS::Rename3Worker::Execute()
     args.to.name = *to_name;
     stat = nfsproc3_rename_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "%s", nfs3_error(res.status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;

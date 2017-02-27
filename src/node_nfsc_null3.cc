@@ -55,14 +55,14 @@ NFS::Null3Worker::~Null3Worker()
 void NFS::Null3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
     clnt_stat stat;
-    stat = nfsproc3_null_3(nullptr, nullptr, client->getClient());
+    stat = nfsproc3_null_3(NULL, NULL, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     success = true;

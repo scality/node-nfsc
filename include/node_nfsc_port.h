@@ -16,31 +16,19 @@
  * @authors:
  *    Guillaume Gimenez <ggim@scality.com>
  */
+
 #pragma once
-#include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
 
+#if __cplusplus < 201103L
+# define NFSC_OVERRIDE
+#else
+# define NFSC_OVERRIDE override
+#endif
 
-namespace NFS {
-    class Client;
-
-    class GetAttr3Worker : public Nan::AsyncWorker {
-
-        Client *client;
-        bool success;
-        char *error;
-        nfs_fh3 obj_fh;
-        GETATTR3res res;
-
-    public:
-
-        GetAttr3Worker(Client *client_,
-                     const v8::Local<v8::Value> &obj_fh_,
-                     Nan::Callback *callback);
-        ~GetAttr3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
-
-    };
-}
+#define NFSC_ASPRINTF(__strp__, __fmt__, ...) \
+    do {\
+        char **p = (__strp__);\
+        int ret = asprintf(p, __fmt__, ##__VA_ARGS__);\
+        if ( ret < 0 )\
+            *p = NULL;\
+    } while (0)

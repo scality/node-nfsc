@@ -63,7 +63,7 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
       name(name_),
       mode((createmode3)mode_->Int32Value()),
       attrs(attrs_),
-      verf(nullptr),
+      verf(NULL),
       res({})
 {
     parent_fh.data.data_val = node::Buffer::Data(parent_fh_);
@@ -103,7 +103,7 @@ NFS::Create3Worker::~Create3Worker()
 void NFS::Create3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
@@ -126,11 +126,11 @@ void NFS::Create3Worker::Execute()
         return;
     stat = nfsproc3_create_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     if (res.status != NFS3_OK) {
-        asprintf(&error, "%s", nfs3_error(res.status));
+        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
         return;
     }
     success = true;
@@ -174,7 +174,7 @@ void NFS::Create3Worker::HandleOKCallback()
             wcc,
         };
         //data stolen by node
-        res.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_val = nullptr;
+        res.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_val = NULL;
         callback->Call(sizeof(argv)/sizeof(*argv), argv);
     }
     else {

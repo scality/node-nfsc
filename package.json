@@ -20,11 +20,14 @@
     },
     "homepage": "https://github.com/scality/node-nfsc#readme",
     "dependencies": {
+        "nan": "^2.5.1"
     },
     "optionalDependencies": {
     },
     "devDependencies": {
+        "mocha": "^2.3.4"
     },
     "scripts": {
-  }
+        "test": "mocha --recursive tests/functional"
+    }
 }

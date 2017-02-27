@@ -33,6 +33,7 @@
                 "src/node_nfsc_rename3.cc",
             ],
             "cflags": [
+                "-Wno-missing-field-initializers",
                 "-Wno-unused-variable",
                 "<!(pkg-config gssrpc --cflags)>",
                 "-ggdb3"

@@ -55,16 +55,16 @@ NFS::Unmount3Worker::~Unmount3Worker()
 void NFS::Unmount3Worker::Execute()
 {
     if (!client->isMounted()) {
-        asprintf(&error, NFSC_NOT_MOUNTED);
+        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
         return;
     }
     Serialize my(client);
     clnt_stat stat;
     const char *dir = client->getExportPath();
-    stat = mountproc3_umnt_3(const_cast<char**>(&dir), nullptr,
+    stat = mountproc3_umnt_3(const_cast<char**>(&dir), NULL,
                              client->getMountClient());
     if (stat != RPC_SUCCESS) {
-        asprintf(&error, "%s", rpc_error(stat));
+        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
         return;
     }
     success = true;

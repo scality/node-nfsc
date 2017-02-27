@@ -19,6 +19,7 @@
 #pragma once
 #include <nan.h>
 #include "nfs3.h"
+#include "node_nfsc_port.h"
 
 
 namespace NFS {
@@ -45,8 +46,8 @@ namespace NFS {
                            const v8::Local<v8::Value> &dircount_,
                            const v8::Local<v8::Value> &maxcount_,
                            Nan::Callback *callback);
-        ~ReadDirPlus3Worker() override;
-        void Execute() override;
-        void HandleOKCallback() override;
+        ~ReadDirPlus3Worker() NFSC_OVERRIDE;
+        void Execute() NFSC_OVERRIDE;
+        void HandleOKCallback() NFSC_OVERRIDE;
     };
 }
