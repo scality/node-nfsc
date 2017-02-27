@@ -12,6 +12,7 @@
                 "src/node_nfsc.cc",
                 "src/node_nfsc_errors3.cc",
                 "src/node_nfsc_fattr3.cc",
+                "src/node_nfsc_sattr3.cc",
                 "src/node_nfsc_wcc3.cc",
                 "src/node_nfsc_null3.cc",
                 "src/node_nfsc_mount3.cc",
@@ -23,6 +24,7 @@
                 "src/node_nfsc_read3.cc",
                 "src/node_nfsc_write3.cc",
                 "src/node_nfsc_commit3.cc",
+                "src/node_nfsc_create3.cc",
             ],
             "cflags": [
                 "-Wno-unused-variable",
