@@ -54,6 +54,8 @@ public:
 
     CLIENT *getClient();
     void setClient(CLIENT *client_);
+    CLIENT *getMountClient();
+    void setMountClient(CLIENT *client_);
     nfs_fh3 &getRootFh();
     void freeRootFh();
     void setRootFh(char *data, size_t len);
@@ -70,6 +72,7 @@ public:
 private:
     sem_t sem;
     CLIENT *client;
+    CLIENT *mntClient;
     bool mounted;
     nfs_fh3 *rootFh;
     Nan::Utf8String host;
@@ -94,6 +97,7 @@ private:
     /* NFSv3 RPCs */
     static NAN_METHOD(Null3);
     static NAN_METHOD(Mount3);
+    static NAN_METHOD(Unmount3);
     static NAN_METHOD(Lookup3);
     static NAN_METHOD(GetAttr3);
     static NAN_METHOD(ReadDir3);

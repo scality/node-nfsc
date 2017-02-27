@@ -235,9 +235,11 @@ bool NFS::Mount3Worker::mount()
     CLIENT *nfsclient = NULL;
     GETATTR3res attr = {};
     GETATTR3args args = {};
+    nfsstat3 status;
     enum clnt_stat state;
     mountres3 mount_point;
     bool isMounted = false;
+    bool freeMountRes = false;
     memset(&mount_point, 0, sizeof mount_point);
 
     mntclient = createMountClient();
@@ -253,6 +255,7 @@ bool NFS::Mount3Worker::mount()
         goto bad;
       }
 
+    freeMountRes = true;
     if (MNT3_OK != mount_point.fhs_status)
       {
         asprintf(&error, "%s", mnt3_error(mount_point.fhs_status));
@@ -276,20 +279,22 @@ bool NFS::Mount3Worker::mount()
         asprintf(&error, "%s", rpc_error(state));
         goto bad;
       }
-
-    if (NFS3_OK != attr.status)
+    status = attr.status;
+    clnt_freeres(nfsclient, (xdrproc_t) xdr_GETATTR3res, (char*) &attr);
+    if (NFS3_OK != status)
       {
-        asprintf(&error, "%s", nfs3_error(attr.status));
+        asprintf(&error, "%s", nfs3_error(status));
         goto bad;
       }
+    clnt_freeres(mntclient, (xdrproc_t) xdr_mountres3, (char *)&mount_point);
     client->setClient(nfsclient);
-    auth_destroy(mntclient->cl_auth);
-    clnt_destroy(mntclient);
-
+    client->setMountClient(mntclient);
     client->setMounted();
     return true;
 
    bad:
+    if (freeMountRes)
+        clnt_freeres(mntclient, (xdrproc_t) xdr_mountres3, (char *)&mount_point);
     if (isMounted) {
         char clnt_res;
         mountproc3_umnt_3(const_cast<char**>(&dir), &clnt_res, mntclient);

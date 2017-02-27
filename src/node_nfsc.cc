@@ -28,6 +28,7 @@ NAN_MODULE_INIT(NFS::Client::Init) {
 
     SetPrototypeMethod(tpl, "null3", Null3);
     SetPrototypeMethod(tpl, "mount3", Mount3);
+    SetPrototypeMethod(tpl, "unmount3", Unmount3);
     SetPrototypeMethod(tpl, "lookup3", Lookup3);
     SetPrototypeMethod(tpl, "getattr3", GetAttr3);
     SetPrototypeMethod(tpl, "readdir3", ReadDir3);
@@ -78,7 +79,27 @@ const char *NFS::Client::getExportPath() const
 
 void NFS::Client::setClient(CLIENT *client_)
 {
+    if (client) {
+        if (client->cl_auth)
+            auth_destroy(client->cl_auth);
+        clnt_destroy(client);
+    }
     client = client_;
+}
+
+CLIENT *NFS::Client::getMountClient()
+{
+    return mntClient;
+}
+
+void NFS::Client::setMountClient(CLIENT *client_)
+{
+    if (mntClient) {
+        if (mntClient->cl_auth)
+            auth_destroy(mntClient->cl_auth);
+        clnt_destroy(mntClient);
+    }
+    mntClient = client_;
 }
 
 void NFS::Client::setMounted(bool v)
@@ -146,8 +167,10 @@ NFS::Client::Client(const v8::Local<v8::Value> &host_,
                     const v8::Local<v8::Value> &gid_,
                     const v8::Local<v8::Value> &authenticationMethod_,
                     const v8::Local<v8::Value> &timeout_) :
+    Nan::ObjectWrap(),
     sem(),
     client(nullptr),
+    mntClient(nullptr),
     mounted(false),
     rootFh(nullptr),
     host(host_),
@@ -163,11 +186,8 @@ NFS::Client::Client(const v8::Local<v8::Value> &host_,
 
 NFS::Client::~Client()
 {
-    if (client) {
-        if (client->cl_auth)
-            auth_destroy(client->cl_auth);
-        clnt_destroy(client);
-    }
+    setClient(nullptr);
+    setMountClient(nullptr);
 }
 
 NAN_METHOD(NFS::Client::New) {

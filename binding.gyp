@@ -16,6 +16,7 @@
                 "src/node_nfsc_wcc3.cc",
                 "src/node_nfsc_null3.cc",
                 "src/node_nfsc_mount3.cc",
+                "src/node_nfsc_unmount3.cc",
                 "src/node_nfsc_lookup3.cc",
                 "src/node_nfsc_getattr3.cc",
                 "src/node_nfsc_readdir3.cc",
