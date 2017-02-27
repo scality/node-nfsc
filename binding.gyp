@@ -30,6 +30,7 @@
                 "src/node_nfsc_rmdir3.cc",
                 "src/node_nfsc_mkdir3.cc",
                 "src/node_nfsc_setattr3.cc",
+                "src/node_nfsc_rename3.cc",
             ],
             "cflags": [
                 "-Wno-unused-variable",

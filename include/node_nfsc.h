@@ -111,6 +111,7 @@ private:
     static NAN_METHOD(RmDir3);
     static NAN_METHOD(MkDir3);
     static NAN_METHOD(SetAttr3);
+    static NAN_METHOD(Rename3);
 
     /*
     static NAN_METHOD(ReadLink);
@@ -118,7 +119,6 @@ private:
     static NAN_METHOD(FsInfo);
     static NAN_METHOD(PathConf);
 
-    static NAN_METHOD(Rename);
 
     static NAN_METHOD(SymLink);
     static NAN_METHOD(MkNod);
