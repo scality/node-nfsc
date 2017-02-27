@@ -30,12 +30,8 @@ namespace NFS {
         Client *client;
         bool success;
         char *error;
-        nfs_fh3 dir_fh;
-        uint64_t cookie;
-        char cookieverf[NFS3_COOKIEVERFSIZE];
-        unsigned int dircount;
-        unsigned int maxcount;
         READDIRPLUS3res res;
+        READDIRPLUS3args args;
 
     public:
 

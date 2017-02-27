@@ -30,8 +30,8 @@ namespace NFS {
         Client *client;
         bool success;
         char *error;
-        nfs_fh3 obj_fh;
         GETATTR3res res;
+        GETATTR3args args;
 
     public:
 

@@ -63,27 +63,26 @@ NFS::Write3Worker::Write3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(0),
-      obj_fh(),
-      count(CheckUDouble(count_->NumberValue())),
-      offset(CheckUDouble(offset_->NumberValue())),
-      stable(stable_how(stable_->Int32Value())),
-      data_val(node::Buffer::Data(data_)),
-      data_len(node::Buffer::Length(data_)),
-      res({})
+      res({}),
+      args({})
 {
-    if ( count == (uint64_t)-1) {
-        NFSC_ASPRINTF(&error, NFSC_ERANGE);
+    args.file.data.data_val = node::Buffer::Data(obj_fh_);
+    args.file.data.data_len = node::Buffer::Length(obj_fh_);
+    args.count = count_->NumberValue();
+    args.offset = CheckUDouble(offset_->NumberValue());
+    args.stable = stable_how(stable_->Int32Value());
+    args.data.data_val = const_cast<char*>(node::Buffer::Data(data_));
+    args.data.data_len = node::Buffer::Length(data_);
+
+    if (args.offset == (uint64_t)-1) {
+        Nan::ThrowRangeError("Invalid offset");
         return;
     }
-    if (offset == (uint64_t)-1) {
-        NFSC_ASPRINTF(&error, NFSC_ERANGE);
+    if (node::Buffer::Length(data_) < args.count) {
+        Nan::ThrowRangeError("count greater than buffer size");
         return;
     }
-    if (node::Buffer::Length(data_) < count) {
-        NFSC_ASPRINTF(&error, NFSC_ERANGE);
-        return;
-    }
-    switch (stable) {
+    switch (args.stable) {
     case UNSTABLE:
     case DATA_SYNC:
     case FILE_SYNC:
@@ -92,10 +91,6 @@ NFS::Write3Worker::Write3Worker(NFS::Client *client_,
         Nan::ThrowRangeError("Invalid stable value");
         return;
     }
-
-    obj_fh.data.data_val = node::Buffer::Data(obj_fh_);
-    obj_fh.data.data_len = node::Buffer::Length(obj_fh_);
-
 }
 
 NFS::Write3Worker::~Write3Worker()
@@ -114,13 +109,6 @@ void NFS::Write3Worker::Execute()
     }
 
     Serialize my(client);
-    WRITE3args args;
-    args.file = obj_fh;
-    args.count = count;
-    args.offset = offset;
-    args.stable = stable;
-    args.data.data_val = const_cast<char*>(data_val);
-    args.data.data_len = data_len;
     clnt_stat stat;
     stat = nfsproc3_write_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {

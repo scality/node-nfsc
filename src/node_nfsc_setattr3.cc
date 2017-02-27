@@ -60,10 +60,26 @@ NFS::SetAttr3Worker::SetAttr3Worker(NFS::Client *client_,
       obj_fh(),
       attrs(attrs_),
       guard(guard_),
-      res({})
+      res({}),
+      args({})
 {
     obj_fh.data.data_val = node::Buffer::Data(obj_fh_);
     obj_fh.data.data_len = node::Buffer::Length(obj_fh_);
+    if (!guard->IsNull()) {
+        v8::Local<v8::Object> ctime = v8::Local<v8::Object>::Cast(guard);
+        args.guard.check = 0;
+        args.guard.sattrguard3_u.obj_ctime.seconds =
+                ctime->Get(Nan::New("ctime")
+                           .ToLocalChecked())->Int32Value();
+        args.guard.sattrguard3_u.obj_ctime.nseconds =
+                ctime->Get(Nan::New("ctime_nsec")
+                           .ToLocalChecked())->Int32Value();
+    } else {
+        args.guard.check = 0;
+        args.guard.sattrguard3_u.obj_ctime = {};
+    }
+    args.object = obj_fh;
+    args.new_attributes = node_nfsc_sattr3(v8::Local<v8::Object>::Cast(attrs));
 }
 
 NFS::SetAttr3Worker::~SetAttr3Worker()
@@ -79,27 +95,7 @@ void NFS::SetAttr3Worker::Execute()
         return;
     }
     Serialize my(client);
-    bool type_error = false;
-    SETATTR3args args;
     clnt_stat stat;
-    if (!guard->IsNull()) {
-        v8::Local<v8::Object> ctime = v8::Local<v8::Object>::Cast(guard);
-        args.guard.check = 0;
-        args.guard.sattrguard3_u.obj_ctime.seconds =
-                ctime->Get(Nan::New("ctime")
-                           .ToLocalChecked())->Int32Value();
-        args.guard.sattrguard3_u.obj_ctime.nseconds =
-                ctime->Get(Nan::New("ctime_nsec")
-                           .ToLocalChecked())->Int32Value();
-    } else {
-        args.guard.check = 0;
-        args.guard.sattrguard3_u.obj_ctime = {};
-    }
-    args.object = obj_fh;
-    args.new_attributes = node_nfsc_sattr3(v8::Local<v8::Object>::Cast(attrs),
-                                           type_error);
-    if (type_error)
-        return;
     stat = nfsproc3_setattr_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

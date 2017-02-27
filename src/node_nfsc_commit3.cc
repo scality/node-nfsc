@@ -57,22 +57,17 @@ NFS::Commit3Worker::Commit3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(0),
-      obj_fh(),
-      count(CheckUDouble(count_->NumberValue())),
-      offset(CheckUDouble(offset_->NumberValue())),
-      res({})
+      res({}),
+      args({})
 {
-    if ( count == (uint64_t)-1) {
-        NFSC_ASPRINTF(&error, NFSC_ERANGE);
+    args.file.data.data_val = node::Buffer::Data(obj_fh_);
+    args.file.data.data_len = node::Buffer::Length(obj_fh_);
+    args.count = count_->NumberValue();
+    args.offset = CheckUDouble(offset_->NumberValue());
+    if (args.offset == (uint64_t)-1) {
+        Nan::ThrowRangeError("Invalid offset");
         return;
     }
-    if (offset == (uint64_t)-1) {
-        NFSC_ASPRINTF(&error, NFSC_ERANGE);
-        return;
-    }
-
-    obj_fh.data.data_val = node::Buffer::Data(obj_fh_);
-    obj_fh.data.data_len = node::Buffer::Length(obj_fh_);
 }
 
 NFS::Commit3Worker::~Commit3Worker()
@@ -91,10 +86,6 @@ void NFS::Commit3Worker::Execute()
     }
 
     Serialize my(client);
-    COMMIT3args args;
-    args.file = obj_fh;
-    args.count = count;
-    args.offset = offset;
     clnt_stat stat;
     stat = nfsproc3_commit_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {

@@ -59,26 +59,27 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(0),
-      parent_fh(),
       name(name_),
-      mode((createmode3)mode_->Int32Value()),
-      attrs(attrs_),
-      verf(NULL),
-      res({})
+      res({}),
+      args({})
 {
-    parent_fh.data.data_val = node::Buffer::Data(parent_fh_);
-    parent_fh.data.data_len = node::Buffer::Length(parent_fh_);
-    switch (mode) {
+    args.where.dir.data.data_val = node::Buffer::Data(parent_fh_);
+    args.where.dir.data.data_len = node::Buffer::Length(parent_fh_);
+    args.where.name = *name;
+    args.how.mode = (createmode3)mode_->Int32Value();
+    switch (args.how.mode) {
     case UNCHECKED:
     case GUARDED:
-        if (!attrs->IsUint8Array()) {
+        if (!attrs_->IsUint8Array()) {
             Nan::ThrowTypeError("Invalid argument for this creation mode,"
                                 " must be an Object when UNCHECKED/GUARDED");
             return;
         }
+        args.how.createhow3_u.obj_attributes =
+                node_nfsc_sattr3(v8::Local<v8::Object>::Cast(attrs_));
         break;
     case EXCLUSIVE:
-        if (!attrs->IsUint8Array()) {
+        if (!attrs_->IsUint8Array()) {
             Nan::ThrowTypeError("Invalid argument for this creation mode,"
                                 " must be a Buffer when EXCLUSIVE");
             return;
@@ -87,7 +88,9 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
             Nan::ThrowTypeError("Invalid verifier size, must be 8 bytes long");
             return;
         }
-        verf = node::Buffer::Data(attrs_);
+        memcpy(&args.how.createhow3_u.verf[0],
+               node::Buffer::Data(attrs_),
+               NFS3_CREATEVERFSIZE);
         break;
     default:
         Nan::ThrowTypeError("Invalid creation mode");
@@ -107,23 +110,7 @@ void NFS::Create3Worker::Execute()
         return;
     }
     Serialize my(client);
-    bool type_error = false;
-    CREATE3args args;
     clnt_stat stat;
-    args.how.mode = mode;
-    switch (args.how.mode) {
-    case UNCHECKED:
-    case GUARDED:
-        args.how.createhow3_u.obj_attributes =
-                node_nfsc_sattr3(v8::Local<v8::Object>::Cast(attrs), type_error);
-        break;
-    case EXCLUSIVE:
-        memcpy(&args.how.createhow3_u.verf[0], verf, NFS3_CREATEVERFSIZE);
-    }
-    args.where.dir = parent_fh;
-    args.where.name = *name;
-    if (type_error)
-        return;
     stat = nfsproc3_create_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

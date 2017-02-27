@@ -60,10 +60,15 @@ NFS::MkDir3Worker::MkDir3Worker(NFS::Client *client_,
       parent_fh(),
       name(name_),
       attrs(attrs_),
-      res({})
+      res({}),
+      args({})
 {
     parent_fh.data.data_val = node::Buffer::Data(parent_fh_);
     parent_fh.data.data_len = node::Buffer::Length(parent_fh_);
+    bool type_error = false;
+    args.where.dir = parent_fh;
+    args.where.name = *name;
+    args.attributes = node_nfsc_sattr3(v8::Local<v8::Object>::Cast(attrs));
 }
 
 NFS::MkDir3Worker::~MkDir3Worker()
@@ -79,15 +84,7 @@ void NFS::MkDir3Worker::Execute()
         return;
     }
     Serialize my(client);
-    bool type_error = false;
-    MKDIR3args args;
     clnt_stat stat;
-    args.where.dir = parent_fh;
-    args.where.name = *name;
-    args.attributes = node_nfsc_sattr3(v8::Local<v8::Object>::Cast(attrs),
-                                       type_error);
-    if (type_error)
-        return;
     stat = nfsproc3_mkdir_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

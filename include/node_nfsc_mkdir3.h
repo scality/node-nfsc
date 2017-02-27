@@ -34,6 +34,7 @@ namespace NFS {
         Nan::Utf8String name;
         const v8::Local<v8::Value>& attrs;
         MKDIR3res res;
+        MKDIR3args args;
 
     public:
 

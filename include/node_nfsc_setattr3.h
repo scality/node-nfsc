@@ -34,6 +34,7 @@ namespace NFS {
         const v8::Local<v8::Value>& attrs;
         const v8::Local<v8::Value>& guard;
         SETATTR3res res;
+        SETATTR3args args;
 
     public:
 

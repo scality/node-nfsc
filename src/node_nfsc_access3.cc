@@ -51,12 +51,12 @@ NFS::Access3Worker::Access3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(0),
-      obj_fh(),
-      access(access_->Uint32Value()),
-      res({})
+      res({}),
+      args({})
 {
-    obj_fh.data.data_val = node::Buffer::Data(obj_fh_);
-    obj_fh.data.data_len = node::Buffer::Length(obj_fh_);
+    args.object.data.data_val = node::Buffer::Data(obj_fh_);
+    args.object.data.data_len = node::Buffer::Length(obj_fh_);
+    args.access = access_->Uint32Value();
 }
 
 NFS::Access3Worker::~Access3Worker()
@@ -72,10 +72,7 @@ void NFS::Access3Worker::Execute()
         return;
     }
     Serialize my(client);
-    ACCESS3args args;
     clnt_stat stat;
-    args.object = obj_fh;
-    args.access = access;
     stat = nfsproc3_access_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

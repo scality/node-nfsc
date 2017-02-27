@@ -30,9 +30,9 @@ namespace NFS {
         Client *client;
         bool success;
         char *error;
-        nfs_fh3 parent_fh;
         Nan::Utf8String name;
         RMDIR3res res;
+        RMDIR3args args;
 
     public:
 

@@ -30,12 +30,9 @@ namespace NFS {
         Client *client;
         bool success;
         char *error;
-        nfs_fh3 parent_fh;
         Nan::Utf8String name;
-        createmode3 mode;
-        const v8::Local<v8::Value>& attrs;
-        const char *verf;
         CREATE3res res;
+        CREATE3args args;
 
     public:
 

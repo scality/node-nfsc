@@ -21,4 +21,4 @@
 #include "nfs3.h"
 
 sattr3
-node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error);
+node_nfsc_sattr3(const v8::Local<v8::Object>& attr);

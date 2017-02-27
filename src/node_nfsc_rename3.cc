@@ -59,16 +59,17 @@ NFS::Rename3Worker::Rename3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(0),
-      from_fh(),
       from_name(from_name_),
-      to_fh(),
       to_name(to_name_),
-      res({})
+      res({}),
+      args({})
 {
-    from_fh.data.data_val = node::Buffer::Data(from_fh_);
-    from_fh.data.data_len = node::Buffer::Length(from_fh_);
-    to_fh.data.data_val = node::Buffer::Data(to_fh_);
-    to_fh.data.data_len = node::Buffer::Length(to_fh_);
+    args.from.dir.data.data_val = node::Buffer::Data(from_fh_);
+    args.from.dir.data.data_len = node::Buffer::Length(from_fh_);
+    args.to.dir.data.data_val = node::Buffer::Data(to_fh_);
+    args.to.dir.data.data_len = node::Buffer::Length(to_fh_);
+    args.from.name = *from_name;
+    args.to.name = *to_name;
 }
 
 NFS::Rename3Worker::~Rename3Worker()
@@ -84,12 +85,7 @@ void NFS::Rename3Worker::Execute()
         return;
     }
     Serialize my(client);
-    RENAME3args args;
     clnt_stat stat;
-    args.from.dir = from_fh;
-    args.from.name = *from_name;
-    args.to.dir = to_fh;
-    args.to.name = *to_name;
     stat = nfsproc3_rename_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

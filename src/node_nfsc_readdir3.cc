@@ -88,31 +88,29 @@ NFS::ReadDir3Worker::ReadDir3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(NULL),
-      dir_fh(),
-      cookie(),
-      cookieverf(),
-      count(count_->Uint32Value()),
-      res({})
+      res({}),
+      args({})
 {
-    dir_fh.data.data_val = node::Buffer::Data(dir_fh_);
-    dir_fh.data.data_len = node::Buffer::Length(dir_fh_);
+    args.dir.data.data_val = node::Buffer::Data(dir_fh_);
+    args.dir.data.data_len = node::Buffer::Length(dir_fh_);
+    args.count = count_->Uint32Value();
     if (!cookie_->IsNull()) {
-        if (node::Buffer::Length(cookie_) != sizeof(cookie)) {
-            NFSC_ASPRINTF(&error, NFSC_ERANGE);
+        if (node::Buffer::Length(cookie_) != sizeof(args.cookie)) {
+            Nan::ThrowRangeError("Invalid cookie size");
             return;
         }
-        memcpy(&cookie, node::Buffer::Data(cookie_), sizeof(cookie));
+        memcpy(&args.cookie, node::Buffer::Data(cookie_), sizeof(args.cookie));
     } else {
-        memset(&cookie, 0, sizeof(cookie));
+        memset(&args.cookie, 0, sizeof(args.cookie));
     }
     if (!cookieverf_->IsNull()) {
-        if (node::Buffer::Length(cookieverf_) != sizeof(cookieverf)) {
-            NFSC_ASPRINTF(&error, NFSC_ERANGE);
+        if (node::Buffer::Length(cookieverf_) != sizeof(args.cookieverf)) {
+            Nan::ThrowRangeError("Invalid cookiverf size");
             return;
         }
-        memcpy(&cookieverf, node::Buffer::Data(cookieverf_), sizeof(cookieverf));
+        memcpy(&args.cookieverf, node::Buffer::Data(cookieverf_), sizeof(args.cookieverf));
     } else {
-        memset(&cookieverf, 0, sizeof(cookieverf));
+        memset(&args.cookieverf, 0, sizeof(args.cookieverf));
     }
 }
 
@@ -131,12 +129,7 @@ void NFS::ReadDir3Worker::Execute()
         return;
     }
     Serialize my(client);
-    READDIR3args args;
     clnt_stat stat;
-    args.dir = dir_fh;
-    args.cookie = cookie;
-    memcpy(args.cookieverf, cookieverf, sizeof(args.cookieverf));
-    args.count = count;
     stat = nfsproc3_readdir_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

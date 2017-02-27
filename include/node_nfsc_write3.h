@@ -30,13 +30,8 @@ namespace NFS {
         Client *client;
         bool success;
         char *error;
-        nfs_fh3 obj_fh;
-        uint64_t count;
-        uint64_t offset;
-        stable_how stable;
-        const char* data_val;
-        size_t data_len;
         WRITE3res res;
+        WRITE3args args;
 
     public:
 

@@ -51,12 +51,13 @@ NFS::Lookup3Worker::Lookup3Worker(NFS::Client *client_,
       client(client_),
       success(false),
       error(0),
-      parent_fh(),
       name(name_),
-      res({})
+      res({}),
+      args({})
 {
-    parent_fh.data.data_val = node::Buffer::Data(parent_fh_);
-    parent_fh.data.data_len = node::Buffer::Length(parent_fh_);
+    args.what.dir.data.data_val = node::Buffer::Data(parent_fh_);
+    args.what.dir.data.data_len = node::Buffer::Length(parent_fh_);
+    args.what.name = *name;
 }
 
 NFS::Lookup3Worker::~Lookup3Worker()
@@ -72,10 +73,7 @@ void NFS::Lookup3Worker::Execute()
         return;
     }
     Serialize my(client);
-    LOOKUP3args args;
     clnt_stat stat;
-    args.what.dir = parent_fh;
-    args.what.name = *name;
     stat = nfsproc3_lookup_3(&args, &res, client->getClient());
     if (stat != RPC_SUCCESS) {
         NFSC_ASPRINTF(&error, "%s", rpc_error(stat));

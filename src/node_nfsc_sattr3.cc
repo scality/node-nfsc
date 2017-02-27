@@ -19,7 +19,7 @@
 #include "node_nfsc_sattr3.h"
 #include "node_nfsc.h"
 sattr3
-node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
+node_nfsc_sattr3(const v8::Local<v8::Object>& attr)
 {
     sattr3 res = {};
     res.atime.set_it = DONT_CHANGE;
@@ -38,7 +38,6 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         if (atime_nsec->IsInt32()) {
             res.atime.set_atime_u.atime.nseconds = atime_nsec->Int32Value();
         } else if (!atime_nsec->IsUndefined()) {
-            type_error = true;
              Nan::ThrowTypeError("Invalid atime_nsec");
              return {};
         }
@@ -46,7 +45,6 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         res.atime.set_it = SET_TO_SERVER_TIME;
         res.atime.set_atime_u.atime = {};
     } else if (!atime->IsUndefined()) {
-        type_error = true;
         Nan::ThrowTypeError("Invalid atime");
         return {};
     }
@@ -58,7 +56,6 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         if (mtime_nsec->IsInt32()) {
             res.mtime.set_mtime_u.mtime.nseconds = mtime_nsec->Int32Value();
         } else if (!mtime->IsUndefined()) {
-            type_error = true;
             Nan::ThrowTypeError("Invalid mtime_nsec");
             return {};
         }
@@ -66,7 +63,6 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         res.mtime.set_it = SET_TO_SERVER_TIME;
         res.mtime.set_mtime_u.mtime = {};
     } else if (!mtime->IsUndefined()) {
-        type_error = true;
         Nan::ThrowTypeError("Invalid mtime");
         return {};
     }
@@ -77,12 +73,10 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         if (size != (size_t)-1) {
             res.size.set_size3_u.size = size;
         } else {
-            type_error = true;
             Nan::ThrowRangeError("Invalid size");
             return {};
         }
     } else if (!size->IsUndefined()) {
-        type_error = true;
         Nan::ThrowRangeError("Invalid size");
         return {};
     }
@@ -90,7 +84,6 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         res.mode.set_it = true;
         res.mode.set_mode3_u.mode = mode->Uint32Value();
     } else if (!mode->IsUndefined()) {
-        type_error = true;
         Nan::ThrowRangeError("Invalid mode");
         return {};
     }
@@ -98,7 +91,6 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         res.uid.set_it = true;
         res.uid.set_uid3_u.uid = uid->Uint32Value();
     } else if (!uid->IsUndefined()) {
-        type_error = true;
         Nan::ThrowRangeError("Invalid uid");
         return {};
     }
@@ -106,10 +98,8 @@ node_nfsc_sattr3(const v8::Local<v8::Object>& attr, bool& type_error)
         res.gid.set_it = true;
         res.gid.set_gid3_u.gid = gid->Uint32Value();
     } else if (!gid->IsUndefined()) {
-        type_error = true;
         Nan::ThrowRangeError("Invalid gid");
         return {};
     }
-    type_error = false;
     return res;
 }

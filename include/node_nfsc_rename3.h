@@ -30,11 +30,10 @@ namespace NFS {
         Client *client;
         bool success;
         char *error;
-        nfs_fh3 from_fh;
         Nan::Utf8String from_name;
-        nfs_fh3 to_fh;
         Nan::Utf8String to_name;
         RENAME3res res;
+        RENAME3args args;
 
     public:
 
