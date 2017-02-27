@@ -39,6 +39,7 @@ NAN_MODULE_INIT(NFS::Client::Init) {
     SetPrototypeMethod(tpl, "create3", Create3);
     SetPrototypeMethod(tpl, "remove3", Remove3);
     SetPrototypeMethod(tpl, "rmdir3", RmDir3);
+    SetPrototypeMethod(tpl, "mkdir3", MkDir3);
 
     constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
     Nan::Set(target, Nan::New("Client").ToLocalChecked(),
