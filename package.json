@@ -25,7 +25,8 @@
     "optionalDependencies": {
     },
     "devDependencies": {
-        "mocha": "^2.3.4"
+        "mocha": "^2.3.4",
+        "async": "~1.4.2"
     },
     "scripts": {
         "test": "mocha --recursive tests/functional"

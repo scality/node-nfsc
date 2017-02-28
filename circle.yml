@@ -6,19 +6,24 @@ machine:
   node:
     version: 4.5.0
   environment:
+    CC: gcc-4.9
     CXX: g++-4.9
-    ENABLE_LOCAL_CACHE: true
 
 dependencies:
-  pre:
-    - sudo apt-get update -y
+  override:
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update
+    - sudo apt-get install -y gcc-4.9 g++-4.9
     - sudo apt-get install -y krb5-multidev
     - npm install nan
     - npm install node-gyp
 
+compile:
+  override:
+    - npm install
 database:
   pre:
-    - sudo apt-get install -y rpcbind
+    - sudo apt-get install -y rpcbind flex
     - git clone git@github.com:nfs-ganesha/nfs-ganesha.git -b V2.4.3
     - ( cd nfs-ganesha && git submodule update --init )
     - mkdir nfs-ganesha/build
@@ -26,9 +31,10 @@ database:
     - make -C nfs-ganesha/build -j 5
     - sudo make -C nfs-ganesha/build install
     - sudo mkdir -p /artifacts /nfs /var/lib/nfs/ganesha/v4old/node0
+    - sudo chown ubuntu:ubuntu /nfs
     - sudo sed -i s,/nonexistant,/nfs,g /etc/ganesha/ganesha.conf
   override:
-    - sudo ganesha.nfsd -L /artifacts/ganesha.log
+    - sudo ganesha.nfsd -N DEBUG -L /artifacts/ganesha.log
   post:
     - while ! grep 'NFS Server Now NOT IN GRACE' /artifacts/ganesha.log ; do echo "waiting for grace period to end" ; sleep 1 ; done
 

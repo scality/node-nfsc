@@ -34,7 +34,7 @@ NAN_METHOD(NFS::Client::Create3) {
         Nan::ThrowTypeError("Parameter 1, dir must be a Buffer");
     else if (!info[1]->IsString())
         Nan::ThrowTypeError("Parameter 2, name must be a string");
-    else if (!info[2]->IsString())
+    else if (!info[2]->IsInt32())
         Nan::ThrowTypeError("Parameter 3, mode must be an integer");
     /* info[3] check is done later in the constructor */
     else if (!info[4]->IsFunction())
@@ -70,7 +70,7 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
     switch (args.how.mode) {
     case UNCHECKED:
     case GUARDED:
-        if (!attrs_->IsUint8Array()) {
+        if (!attrs_->IsObject()) {
             Nan::ThrowTypeError("Invalid argument for this creation mode,"
                                 " must be an Object when UNCHECKED/GUARDED");
             return;
