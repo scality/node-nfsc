@@ -52,8 +52,6 @@ stages:
           CC: gcc-4.9
           CXX: g++-4.9
         command: |
-          npm install nan
-          npm install node-gyp
           npm install
       - type: shell
         name: configure test

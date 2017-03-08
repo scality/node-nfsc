@@ -1,34 +1,34 @@
 {
-    "name": "node-nfsc",
-    "private": false,
-    "version": "0.0.1",
-    "description": "NFS client bindings for node.js",
-    "main": "index.js",
-    "engines": {
-        "node": "~4.5.0"
-    },
-    "repository": "scality/node-nfsc",
-    "keywords": [
-        "nfs",
-        "filesystem",
-        "client"
-    ],
-    "author": "Guillaume Gimenez <ggim@scality.com>",
-    "license": "Apache-2.0",
-    "bugs": {
-        "url": "https://github.com/scality/node-nfsc/issues"
-    },
-    "homepage": "https://github.com/scality/node-nfsc#readme",
-    "dependencies": {
-        "nan": "^2.5.1"
-    },
-    "optionalDependencies": {
-    },
-    "devDependencies": {
-        "mocha": "^2.3.4",
-        "async": "~1.4.2"
-    },
-    "scripts": {
-        "test": "mocha --recursive tests/functional"
-    }
+  "name": "node-nfsc",
+  "private": false,
+  "version": "1.0.0",
+  "description": "NFS client bindings for node.js",
+  "main": "index.js",
+  "engines": {
+    "node": "~4.5.0"
+  },
+  "repository": "scality/node-nfsc",
+  "keywords": [
+    "nfs",
+    "filesystem",
+    "client"
+  ],
+  "author": "Guillaume Gimenez <ggim@scality.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/scality/node-nfsc/issues"
+  },
+  "homepage": "https://github.com/scality/node-nfsc#readme",
+  "dependencies": {
+    "nan": "^2.5.1",
+    "node-gyp": "^3.5.0"
+  },
+  "optionalDependencies": {},
+  "devDependencies": {
+    "mocha": "^2.3.4",
+    "async": "~1.4.2"
+  },
+  "scripts": {
+    "test": "mocha --recursive tests/functional"
+  }
 }
