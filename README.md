@@ -1,6 +1,9 @@
 ![logo](node-nfsc.png)
 
+
 # node-nfsc
+
+[![CircleCI](https://circleci.com/gh/scality/node-nfsc.svg?style=svg)](https://circleci.com/gh/scality/node-nfsc)
 
 ## tl;dr
 
@@ -8,10 +11,12 @@ NFS client bindings for node.js
 
 ## Using node-nfsc in your project
 
-Add this entry in the ```dependencies``` section of your ```package.json``` file.
+Install the dependencies ```krb5-multidev``` and ```libkrb5-dev```.
 
-```javascript
-"node-nfsc": "scality/node-nfsc",
+And then,
+
+```
+$ npm install --save node-nfsc
 ```
 
 ## Usage
@@ -57,7 +62,7 @@ my_stash.mount((err, root) => {
                     console.log(err);
                     return;
                 }
-                myfyle_content = buffer;
+                myfile_content = buffer;
             });
         });
     });
