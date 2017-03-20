@@ -57,6 +57,7 @@ NFS::GetAttr3Worker::GetAttr3Worker(NFS::Client *client_,
 
 NFS::GetAttr3Worker::~GetAttr3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_GETATTR3res, (char *) &res);
 }

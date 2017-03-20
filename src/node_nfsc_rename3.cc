@@ -74,6 +74,7 @@ NFS::Rename3Worker::Rename3Worker(NFS::Client *client_,
 
 NFS::Rename3Worker::~Rename3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_RENAME3res, (char *) &res);
 }

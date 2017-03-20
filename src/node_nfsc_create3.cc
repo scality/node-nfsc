@@ -99,6 +99,7 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
 
 NFS::Create3Worker::~Create3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_CREATE3res, (char *) &res);
 }

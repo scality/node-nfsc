@@ -64,6 +64,7 @@ NFS::RmDir3Worker::RmDir3Worker(NFS::Client *client_,
 
 NFS::RmDir3Worker::~RmDir3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_RMDIR3res, (char *) &res);
 }

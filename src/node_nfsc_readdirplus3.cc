@@ -134,6 +134,7 @@ NFS::ReadDirPlus3Worker::ReadDirPlus3Worker(NFS::Client *client_,
 
 NFS::ReadDirPlus3Worker::~ReadDirPlus3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_READDIRPLUS3res, (char *) &res);
 }

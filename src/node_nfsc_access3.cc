@@ -61,6 +61,7 @@ NFS::Access3Worker::Access3Worker(NFS::Client *client_,
 
 NFS::Access3Worker::~Access3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_ACCESS3res, (char *) &res);
 }

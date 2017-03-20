@@ -72,6 +72,7 @@ NFS::Commit3Worker::Commit3Worker(NFS::Client *client_,
 
 NFS::Commit3Worker::~Commit3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_COMMIT3res, (char *) &res);
 }

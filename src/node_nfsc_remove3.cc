@@ -64,6 +64,7 @@ NFS::Remove3Worker::Remove3Worker(NFS::Client *client_,
 
 NFS::Remove3Worker::~Remove3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_REMOVE3res, (char *) &res);
 }

@@ -95,6 +95,7 @@ NFS::Write3Worker::Write3Worker(NFS::Client *client_,
 
 NFS::Write3Worker::~Write3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_WRITE3res, (char *) &res);
 }

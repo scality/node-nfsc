@@ -73,6 +73,7 @@ NFS::MkDir3Worker::MkDir3Worker(NFS::Client *client_,
 
 NFS::MkDir3Worker::~MkDir3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_MKDIR3res, (char *) &res);
 }

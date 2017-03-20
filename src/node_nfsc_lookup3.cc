@@ -62,6 +62,7 @@ NFS::Lookup3Worker::Lookup3Worker(NFS::Client *client_,
 
 NFS::Lookup3Worker::~Lookup3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_LOOKUP3res, (char *) &res);
 }

@@ -68,6 +68,7 @@ NFS::Read3Worker::Read3Worker(NFS::Client *client_,
 
 NFS::Read3Worker::~Read3Worker()
 {
+    Serialize my(client);
     free(error);
     clnt_freeres(client->getClient(), (xdrproc_t) xdr_READ3res, (char *) &res);
 }
