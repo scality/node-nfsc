@@ -60,6 +60,7 @@ readdir_entries(READDIR3res *res)
         if (entry->name) {
             item->Set(Nan::New("name").ToLocalChecked(),
                       Nan::New(entry->name).ToLocalChecked());
+            entry->name = NULL;
         } else {
             item->Set(Nan::New("name").ToLocalChecked(),
                       Nan::Null());
