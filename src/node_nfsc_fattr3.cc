@@ -43,35 +43,26 @@ ftype3_str(ftype3 type)
 
 bool ftype3_value(const char *typeName, ftype3 *typep)
 {
+    static struct {
+        const char *name;
+        ftype3 type;
+    } mapping[] = {
+        {"NF3REG",  NF3REG},
+        {"NF3DIR",  NF3DIR},
+        {"NF3BLK",  NF3BLK},
+        {"NF3CHR",  NF3CHR},
+        {"NF3LNK",  NF3LNK},
+        {"NF3SOCK", NF3SOCK},
+        {"NF3FIFO", NF3FIFO}
+    };
+    unsigned int i;
     if (!typep || !typeName)
         return false;
-    if (!strcmp(typeName, "NF3REG")) {
-        *typep = NF3REG;
-        return true;
-    }
-    if (!strcmp(typeName, "NF3DIR")) {
-        *typep = NF3DIR;
-        return true;
-    }
-    if (!strcmp(typeName, "NF3BLK")) {
-        *typep = NF3BLK;
-        return true;
-    }
-    if (!strcmp(typeName, "NF3CHR")) {
-        *typep = NF3CHR;
-        return true;
-    }
-    if (!strcmp(typeName, "NF3LNK")) {
-        *typep = NF3LNK;
-        return true;
-    }
-    if (!strcmp(typeName, "NF3SOCK")) {
-        *typep = NF3SOCK;
-        return true;
-    }
-    if (!strcmp(typeName, "NF3FIFO")) {
-        *typep = NF3FIFO;
-        return true;
+    for (i = 0 ; i < sizeof(mapping)/sizeof(*mapping) ; ++i) {
+        if (!strcmp(typeName, mapping[i].name)) {
+            *typep = mapping[i].type;
+            return true;
+        }
     }
     return false;
 }
