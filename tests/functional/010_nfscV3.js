@@ -162,6 +162,68 @@ async.waterfall([
                 done(next, null);
             });
         }),
+    next =>
+        describeIt('should create a named pipe', done => {
+            var name = 'bar_' + crypto.randomBytes(8).toString('hex');
+            mnt.mknod(root_fh, name, mnt.NF3FIFO, {attrs: {}},
+                      (err, object, obj_attrs, dir_wcc) => {
+                          assert.strictEqual(err, null);
+                          assert.strictEqual(typeof(object), 'object');
+                          assert.strictEqual(obj_attrs.type, mnt.NF3FIFO);
+                          done(next, null);
+                      });
+        }),
+    next =>
+        describeIt('should create a socket', done => {
+            var name = 'bar_' + crypto.randomBytes(8).toString('hex');
+            mnt.mknod(root_fh, name, mnt.NF3SOCK, {attrs: {}},
+                      (err, object, obj_attrs, dir_wcc) => {
+                          assert.strictEqual(err, null);
+                          assert.strictEqual(typeof(object), 'object');
+                          assert.strictEqual(obj_attrs.type, mnt.NF3SOCK);
+                          done(next, null);
+                      });
+        }),
+    next =>
+        describeIt('should create a char device', done => {
+            var name = 'bar_' + crypto.randomBytes(8).toString('hex');
+            mnt.mknod(root_fh, name, mnt.NF3CHR,
+                      {
+                          rdev: {
+                              major: 10,
+                              minor: 10
+                          },
+                          attrs: {}
+                      },
+                      (err, object, obj_attrs, dir_wcc) => {
+                          assert.strictEqual(err, null);
+                          assert.strictEqual(typeof(object), 'object');
+                          assert.strictEqual(obj_attrs.type, mnt.NF3CHR);
+                          assert.strictEqual(obj_attrs.rdev.major, 10);
+                          assert.strictEqual(obj_attrs.rdev.minor, 10);
+                          done(next, null);
+                      });
+        }),
+    next =>
+        describeIt('should create a block device', done => {
+            var name = 'bar_' + crypto.randomBytes(8).toString('hex');
+            mnt.mknod(root_fh, name, mnt.NF3BLK,
+                      {
+                          rdev: {
+                              major: 10,
+                              minor: 10
+                          },
+                          attrs: {}
+                      },
+                      (err, object, obj_attrs, dir_wcc) => {
+                          assert.strictEqual(err, null);
+                          assert.strictEqual(typeof(object), 'object');
+                          assert.strictEqual(obj_attrs.type, mnt.NF3BLK);
+                          assert.strictEqual(obj_attrs.rdev.major, 10);
+                          assert.strictEqual(obj_attrs.rdev.minor, 10);
+                          done(next, null);
+                      });
+        }),
     (next) =>
         describeIt('should unmount the filesystem', done => {
             mnt.unmount(err => {

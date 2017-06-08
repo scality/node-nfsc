@@ -41,6 +41,41 @@ ftype3_str(ftype3 type)
     }
 }
 
+bool ftype3_value(const char *typeName, ftype3 *typep)
+{
+    if (!typep || !typeName)
+        return false;
+    if (!strcmp(typeName, "NF3REG")) {
+        *typep = NF3REG;
+        return true;
+    }
+    if (!strcmp(typeName, "NF3DIR")) {
+        *typep = NF3DIR;
+        return true;
+    }
+    if (!strcmp(typeName, "NF3BLK")) {
+        *typep = NF3BLK;
+        return true;
+    }
+    if (!strcmp(typeName, "NF3CHR")) {
+        *typep = NF3CHR;
+        return true;
+    }
+    if (!strcmp(typeName, "NF3LNK")) {
+        *typep = NF3LNK;
+        return true;
+    }
+    if (!strcmp(typeName, "NF3SOCK")) {
+        *typep = NF3SOCK;
+        return true;
+    }
+    if (!strcmp(typeName, "NF3FIFO")) {
+        *typep = NF3FIFO;
+        return true;
+    }
+    return false;
+}
+
 v8::Local<v8::Object> node_nfsc_fattr3(const fattr3 &attr)
 {
     char *buf_fileid = (char*)malloc(sizeof(attr.fileid));
@@ -48,6 +83,13 @@ v8::Local<v8::Object> node_nfsc_fattr3(const fattr3 &attr)
     memcpy(buf_fileid, &attr.fileid, sizeof(attr.fileid));
     memcpy(buf_fsid, &attr.fsid, sizeof(attr.fsid));
     v8::Local<v8::Object> obj = Nan::New<v8::Object>();
+    v8::Local<v8::Object> rdev = Nan::New<v8::Object>();
+
+    rdev->Set(Nan::New("major").ToLocalChecked(),
+              Nan::New(attr.rdev.specdata1));
+    rdev->Set(Nan::New("minor").ToLocalChecked(),
+              Nan::New(attr.rdev.specdata2));
+
     obj->Set(Nan::New("atime").ToLocalChecked(),
              Nan::New<v8::Uint32>(attr.atime.seconds));
     obj->Set(Nan::New("atime_nsec").ToLocalChecked(),
@@ -76,10 +118,8 @@ v8::Local<v8::Object> node_nfsc_fattr3(const fattr3 &attr)
              Nan::New(attr.mode));
     obj->Set(Nan::New("nlink").ToLocalChecked(),
              Nan::New(attr.nlink));
-/*
     obj->Set(Nan::New("rdev").ToLocalChecked(),
-             Nan::New(attr.rdev).ToLocalChecked());
-*/
+             rdev);
     obj->Set(Nan::New("size").ToLocalChecked(),
              Nan::New(double(attr.size)));
     obj->Set(Nan::New("used").ToLocalChecked(),

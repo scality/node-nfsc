@@ -22,3 +22,6 @@
 
 v8::Local<v8::Object>
 node_nfsc_fattr3(const fattr3 &attr);
+
+bool
+ftype3_value(const char *typeName, ftype3 *typep);

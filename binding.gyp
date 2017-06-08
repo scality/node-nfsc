@@ -31,6 +31,7 @@
                 "src/node_nfsc_mkdir3.cc",
                 "src/node_nfsc_setattr3.cc",
                 "src/node_nfsc_rename3.cc",
+                "src/node_nfsc_mknod3.cc",
             ],
             "cflags": [
                 "-Wno-missing-field-initializers",

@@ -1,4 +1,6 @@
 {
     "host": "localhost",
-    "exportPath": "/nfs"
+    "exportPath": "/nfs",
+    "uid": 0,
+    "gid": 0
 }
