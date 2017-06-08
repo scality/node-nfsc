@@ -44,6 +44,7 @@ NAN_MODULE_INIT(NFS::Client::Init) {
     SetPrototypeMethod(tpl, "setattr3", SetAttr3);
     SetPrototypeMethod(tpl, "rename3", Rename3);
     SetPrototypeMethod(tpl, "mknod3", MkNod3);
+    SetPrototypeMethod(tpl, "symlink3", SymLink3);
 
     constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
     Nan::Set(target, Nan::New("Client").ToLocalChecked(),
