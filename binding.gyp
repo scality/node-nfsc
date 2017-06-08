@@ -33,6 +33,7 @@
                 "src/node_nfsc_rename3.cc",
                 "src/node_nfsc_mknod3.cc",
                 "src/node_nfsc_symlink3.cc",
+                "src/node_nfsc_readlink3.cc",
             ],
             "cflags": [
                 "-Wno-missing-field-initializers",
