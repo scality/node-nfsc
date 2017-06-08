@@ -1,0 +1,28 @@
+NFSV4
+{
+	Graceless = true;
+	Only_Numeric_Owners = true;
+}
+
+EXPORT
+{
+	# Export Id (mandatory, each EXPORT must have a unique Export_Id)
+	Export_Id = 77;
+
+	# Exported path (mandatory)
+	Path = /nfs;
+
+	# Pseudo Path (required for NFS v4)
+	Pseudo = /nfs;
+
+	# Required for access (default is None)
+	# Could use CLIENT blocks instead
+	Access_Type = RW;
+	Protocols = 3, 4;
+	Squash = No_root_squash;
+
+	# Exporting FSAL
+	FSAL {
+		Name = VFS;
+	}
+}

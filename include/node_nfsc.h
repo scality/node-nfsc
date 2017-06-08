@@ -113,6 +113,7 @@ private:
     static NAN_METHOD(MkDir3);
     static NAN_METHOD(SetAttr3);
     static NAN_METHOD(Rename3);
+    static NAN_METHOD(MkNod3);
 
     /*
     static NAN_METHOD(ReadLink);
@@ -122,7 +123,6 @@ private:
 
 
     static NAN_METHOD(SymLink);
-    static NAN_METHOD(MkNod);
     static NAN_METHOD(Link);
     */
     static inline Nan::Persistent<v8::Function> & constructor() {
