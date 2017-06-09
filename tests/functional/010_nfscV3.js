@@ -232,8 +232,18 @@ async.waterfall([
                             assert.strictEqual(err, null);
                             assert.strictEqual(typeof(object), 'object');
                             assert.strictEqual(obj_attrs.type, mnt.NF3LNK);
-                            done(next, null);
+                            done(next, null, object);
                         });
+        }),
+    (object, next) =>
+        describeIt('should read the symbolic link', done => {
+            mnt.readlink(object, (err, path, obj_attrs) => {
+                assert.strictEqual(err, null);
+                assert.strictEqual(typeof(obj_attrs), 'object');
+                assert.strictEqual(obj_attrs.mode, 0o777);
+                assert.strictEqual(path, 'foo-bar-baz');
+                done(next, null);
+            });
         }),
     (next) =>
         describeIt('should unmount the filesystem', done => {

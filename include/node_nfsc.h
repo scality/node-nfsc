@@ -115,9 +115,9 @@ private:
     static NAN_METHOD(Rename3);
     static NAN_METHOD(MkNod3);
     static NAN_METHOD(SymLink3);
+    static NAN_METHOD(ReadLink3);
 
     /*
-    static NAN_METHOD(ReadLink);
     static NAN_METHOD(FsStat);
     static NAN_METHOD(FsInfo);
     static NAN_METHOD(PathConf);
