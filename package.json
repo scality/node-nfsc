@@ -1,7 +1,7 @@
 {
   "name": "node-nfsc",
   "private": false,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "NFS client bindings for node.js",
   "main": "index.js",
   "engines": {
