@@ -18,29 +18,26 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class GetAttr3Worker : public Nan::AsyncWorker {
-
-        Client *client;
-        bool success;
-        char *error;
-        GETATTR3res res;
-        GETATTR3args args;
+    class GetAttr3Worker : public Procedure3Worker<GETATTR3args, GETATTR3res> {
 
     public:
 
         GetAttr3Worker(Client *client_,
-                     const v8::Local<v8::Value> &obj_fh_,
-                     Nan::Callback *callback);
-        ~GetAttr3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
+                       const v8::Local<v8::Value> &obj_fh_,
+                       Nan::Callback *callback);
 
+    private:
+
+        clnt_stat xdrProc(GETATTR3args *a, GETATTR3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_getattr_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

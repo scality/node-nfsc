@@ -18,31 +18,29 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class Remove3Worker : public Nan::AsyncWorker {
+    class Remove3Worker : public Procedure3Worker<REMOVE3args, REMOVE3res> {
 
-        Client *client;
-        bool success;
-        char *error;
         Nan::Utf8String name;
-        REMOVE3res res;
-        REMOVE3args args;
 
     public:
 
         Remove3Worker(Client *client_,
-                     const v8::Local<v8::Value> &parent_fh_,
-                     const v8::Local<v8::Value> &name_,
-                     Nan::Callback *callback);
-        ~Remove3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
+                      const v8::Local<v8::Value> &parent_fh_,
+                      const v8::Local<v8::Value> &name_,
+                      Nan::Callback *callback);
 
+    private:
+
+        clnt_stat xdrProc(REMOVE3args *a, REMOVE3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_remove_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

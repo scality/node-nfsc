@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_lookup3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
 // (dir, name, callback(err, obj_fh, obj_attr, dir_attr) )
@@ -47,76 +46,45 @@ NFS::Lookup3Worker::Lookup3Worker(NFS::Client *client_,
                                 const v8::Local<v8::Value> &parent_fh_,
                                 const v8::Local<v8::Value> &name_,
                                 Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0),
-      name(name_),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t) xdr_LOOKUP3res, callback),
+      name(name_)
 {
     args.what.dir.data.data_val = node::Buffer::Data(parent_fh_);
     args.what.dir.data.data_len = node::Buffer::Length(parent_fh_);
     args.what.name = *name;
 }
 
-NFS::Lookup3Worker::~Lookup3Worker()
+void NFS::Lookup3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_LOOKUP3res, (char *) &res);
+    v8::Local<v8::Value> obj_attrs;
+    v8::Local<v8::Value> dir_attrs;
+    if (res.LOOKUP3res_u.resok.obj_attributes.attributes_follow)
+        obj_attrs = node_nfsc_fattr3(res.LOOKUP3res_u.resok.obj_attributes
+                                     .post_op_attr_u.attributes);
+    else
+        obj_attrs = Nan::Null();
+    if (res.LOOKUP3res_u.resok.dir_attributes.attributes_follow)
+        dir_attrs = node_nfsc_fattr3(res.LOOKUP3res_u.resok.dir_attributes
+                                     .post_op_attr_u.attributes);
+    else
+        dir_attrs = Nan::Null();
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        Nan::NewBuffer(res.LOOKUP3res_u.resok.object.data.data_val,
+        res.LOOKUP3res_u.resok.object.data.data_len).ToLocalChecked(), //obj_fh
+        obj_attrs,
+        dir_attrs
+    };
+    //data stolen by node
+    res.LOOKUP3res_u.resok.object.data.data_val = NULL;
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::Lookup3Worker::Execute()
+void NFS::Lookup3Worker::procFailure()
 {
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_lookup_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
-}
-
-void NFS::Lookup3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Value> obj_attrs;
-        v8::Local<v8::Value> dir_attrs;
-        if (res.LOOKUP3res_u.resok.obj_attributes.attributes_follow)
-            obj_attrs = node_nfsc_fattr3(res.LOOKUP3res_u.resok.obj_attributes.post_op_attr_u.attributes);
-        else
-            obj_attrs = Nan::Null();
-        if (res.LOOKUP3res_u.resok.dir_attributes.attributes_follow)
-            dir_attrs = node_nfsc_fattr3(res.LOOKUP3res_u.resok.dir_attributes.post_op_attr_u.attributes);
-        else
-            dir_attrs = Nan::Null();
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            Nan::NewBuffer(res.LOOKUP3res_u.resok.object.data.data_val,
-                           res.LOOKUP3res_u.resok.object.data.data_len).ToLocalChecked(), //obj_fh
-            obj_attrs,
-            dir_attrs
-        };
-        //data stolen by node
-        res.LOOKUP3res_u.resok.object.data.data_val = NULL;
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
-        };
-        callback->Call(1, argv);
-    }
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
+    };
+    callback->Call(1, argv);
 }
 

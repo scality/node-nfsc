@@ -18,22 +18,16 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class MkNod3Worker : public Nan::AsyncWorker {
+    class MkNod3Worker : public Procedure3Worker<MKNOD3args, MKNOD3res> {
 
-        Client *client;
-        bool success;
-        char *error;
         Nan::Utf8String name;
         Nan::Utf8String type;
-        MKNOD3res res;
-        MKNOD3args args;
 
     public:
 
@@ -43,9 +37,13 @@ namespace NFS {
                      const v8::Local<v8::Value> &type,
                      const v8::Local<v8::Value> &mknodData_,
                      Nan::Callback *callback);
-        ~MkNod3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(MKNOD3args *a, MKNOD3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_mknod_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

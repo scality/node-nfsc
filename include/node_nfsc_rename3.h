@@ -18,22 +18,16 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class Rename3Worker : public Nan::AsyncWorker {
+    class Rename3Worker : public Procedure3Worker<RENAME3args, RENAME3res> {
 
-        Client *client;
-        bool success;
-        char *error;
         Nan::Utf8String from_name;
         Nan::Utf8String to_name;
-        RENAME3res res;
-        RENAME3args args;
 
     public:
 
@@ -43,9 +37,13 @@ namespace NFS {
                       const v8::Local<v8::Value> &to_fh_,
                       const v8::Local<v8::Value> &to_name_,
                       Nan::Callback *callback);
-        ~Rename3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(RENAME3args *a, RENAME3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_rename_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

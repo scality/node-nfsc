@@ -18,33 +18,31 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class Create3Worker : public Nan::AsyncWorker {
+    class Create3Worker : public Procedure3Worker<CREATE3args, CREATE3res> {
 
-        Client *client;
-        bool success;
-        char *error;
         Nan::Utf8String name;
-        CREATE3res res;
-        CREATE3args args;
 
     public:
 
         Create3Worker(Client *client_,
-                     const v8::Local<v8::Value> &parent_fh_,
-                     const v8::Local<v8::Value> &name_,
+                      const v8::Local<v8::Value> &parent_fh_,
+                      const v8::Local<v8::Value> &name_,
                       const v8::Local<v8::Value> &mode_,
                       const v8::Local<v8::Value> &attrs_,
-                     Nan::Callback *callback);
-        ~Create3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
+                      Nan::Callback *callback);
 
+    private:
+
+        clnt_stat xdrProc(CREATE3args *a, CREATE3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_create_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

@@ -18,26 +18,34 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class Null3Worker : public Nan::AsyncWorker {
+    struct DummyNullArgs {};
+    struct DummyNullRes {
+        nfsstat3 status;
+    };
 
-        Client *client;
-        bool success;
-        char *error;
+    class Null3Worker : public Procedure3Worker<DummyNullArgs, DummyNullRes> {
 
     public:
 
         Null3Worker(Client *client_,
                      Nan::Callback *callback);
-        ~Null3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(DummyNullArgs *a,
+                          DummyNullRes *r, CLIENT *c) NFSC_OVERRIDE {
+            /* null procedure does nothing, but it still needs a status
+             * for the templatized code which relies on it */
+            r->status = NFS3_OK;
+            return nfsproc3_symlink_3(0, 0, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

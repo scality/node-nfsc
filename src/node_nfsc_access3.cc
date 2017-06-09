@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_access3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
 // (object, access, callback(err, access, obj_attr|null) )
@@ -47,66 +46,34 @@ NFS::Access3Worker::Access3Worker(NFS::Client *client_,
                                 const v8::Local<v8::Value> &obj_fh_,
                                 const v8::Local<v8::Value> &access_,
                                 Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t)xdr_ACCESS3res, callback)
 {
     args.object.data.data_val = node::Buffer::Data(obj_fh_);
     args.object.data.data_len = node::Buffer::Length(obj_fh_);
     args.access = access_->Uint32Value();
 }
 
-NFS::Access3Worker::~Access3Worker()
+void NFS::Access3Worker::procFailure()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_ACCESS3res, (char *) &res);
+    v8::Local<v8::Value> obj_attrs;
+    if (res.ACCESS3res_u.resok.obj_attributes.attributes_follow)
+        obj_attrs = node_nfsc_fattr3(res.ACCESS3res_u.resok
+                                     .obj_attributes.post_op_attr_u.attributes);
+    else
+        obj_attrs = Nan::Null();
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        Nan::New(res.ACCESS3res_u.resok.access),
+        obj_attrs,
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::Access3Worker::Execute()
+void NFS::Access3Worker::procSuccess()
 {
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_access_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
-}
-
-void NFS::Access3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Value> obj_attrs;
-        if (res.ACCESS3res_u.resok.obj_attributes.attributes_follow)
-            obj_attrs = node_nfsc_fattr3(res.ACCESS3res_u.resok.obj_attributes.post_op_attr_u.attributes);
-        else
-            obj_attrs = Nan::Null();
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            Nan::New(res.ACCESS3res_u.resok.access),
-            obj_attrs,
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
-        };
-        callback->Call(1, argv);
-    }
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
+    };
+    callback->Call(1, argv);
 }
 

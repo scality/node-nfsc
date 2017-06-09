@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_null3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
 // ( callback(err) )
@@ -41,47 +40,22 @@ NAN_METHOD(NFS::Client::Null3) {
 
 NFS::Null3Worker::Null3Worker(NFS::Client *client_,
                                 Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0)
+    : Procedure3Worker(client_, 0, callback)
 {}
 
-NFS::Null3Worker::~Null3Worker()
+void NFS::Null3Worker::procSuccess()
 {
-    free(error);
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null()
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::Null3Worker::Execute()
+void NFS::Null3Worker::procFailure()
 {
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_null_3(NULL, NULL, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    success = true;
-}
-
-void NFS::Null3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null()
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
-        };
-        callback->Call(1, argv);
-    }
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
+    };
+    callback->Call(1, argv);
 }
 
