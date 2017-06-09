@@ -224,6 +224,17 @@ async.waterfall([
                           done(next, null);
                       });
         }),
+    next =>
+        describeIt('should create a symbolic link', done => {
+            var name = 'bar_' + crypto.randomBytes(8).toString('hex');
+            mnt.symlink(root_fh, name, {mode: 0o777}, 'foo-bar-baz',
+                        (err, object, obj_attrs, dir_wcc) => {
+                            assert.strictEqual(err, null);
+                            assert.strictEqual(typeof(object), 'object');
+                            assert.strictEqual(obj_attrs.type, mnt.NF3LNK);
+                            done(next, null);
+                        });
+        }),
     (next) =>
         describeIt('should unmount the filesystem', done => {
             mnt.unmount(err => {
