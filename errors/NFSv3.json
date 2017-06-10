@@ -1,0 +1,238 @@
+{
+    "MNT3ERR_PERM": {
+        "description": "Not owner. The operation was not allowed because the caller is either not a privileged user (root) or not the owner of the target of the operation.",
+        "code": 1
+    },
+    "MNT3ERR_NOENT": {
+        "description": "No such file or directory. The file or directory name specified does not exist.",
+        "code": 2
+    },
+    "MNT3ERR_IO": {
+        "description": "I/O error. A hard error (for example, a disk error) occurred while processing the requested operation.",
+        "code": 5
+    },
+    "MNT3ERR_ACCES": {
+        "description": "Permission denied. The caller does not have the correct permission to perform the requested operation. Contrast this with NFS3ERR_PERM, which restricts itself to owner or privileged user permission failures.",
+        "code": 13
+    },
+    "MNT3ERR_NOTDIR": {
+        "description": "Not a directory. The caller specified a non-directory in a directory operation.",
+        "code": 20
+    },
+    "MNT3ERR_INVAL": {
+        "description": "Invalid argument or unsupported argument for an operation.",
+        "code": 22
+    },
+    "MNT3ERR_NAMETOOLONG": {
+        "description": "The filename in an operation was too long.",
+        "code": 63
+    },
+    "MNT3ERR_NOTSUPP": {
+        "description": "Operation is not supported",
+        "code": 10004
+    },
+    "MNT3ERR_SERVERFAULT": {
+        "description": "An error occurred on the server which does not map to any of the legal NFS version 3 protocol error values.  The client should translate this into an appropriate error. UNIX clients may choose to translate this to EIO.",
+        "code": 10006
+    },
+    "NFS3ERR_PERM": {
+        "description": "Not owner. The operation was not allowed because the caller is either not a privileged user (root) or not the owner of the target of the operation.",
+        "code": 1
+    },
+    "NFS3ERR_NOENT": {
+        "description": "No such file or directory. The file or directory name specified does not exist.",
+        "code": 2
+    },
+    "NFS3ERR_IO": {
+        "description": "I/O error. A hard error (for example, a disk error) occurred while processing the requested operation.",
+        "code": 5
+    },
+    "NFS3ERR_NXIO": {
+        "description": "I/O error. No such device or address.",
+        "code": 6
+    },
+    "NFS3ERR_ACCES": {
+        "description": "Permission denied. The caller does not have the correct permission to perform the requested operation. Contrast this with NFS3ERR_PERM, which restricts itself to owner or privileged user permission failures.",
+        "code": 13
+    },
+    "NFS3ERR_EXIST": {
+        "description": "File exists. The file specified already exists.",
+        "code": 17
+    },
+    "NFS3ERR_XDEV": {
+        "description": "Attempt to do a cross-device hard link.",
+        "code": 18
+    },
+    "NFS3ERR_NODEV": {
+        "description": "No such device.",
+        "code": 19
+    },
+    "NFS3ERR_NOTDIR": {
+        "description": "Not a directory. The caller specified a non-directory in a directory operation.",
+        "code": 20
+    },
+    "NFS3ERR_ISDIR": {
+        "description": "Is a directory. The caller specified a directory in a non-directory operation.",
+        "code": 20
+    },
+    "NFS3ERR_INVAL": {
+        "description": "Invalid argument or unsupported argument for an operation. Two examples are attempting a READLINK on an object other than a symbolic link or attempting to SETATTR a time field on a server that does not support this operation.",
+        "code": 22
+    },
+    "NFS3ERR_FBIG": {
+        "description": "File too large. The operation would have caused a file to grow beyond the server's limit.",
+        "code": 27
+    },
+    "NFS3ERR_NOSPC": {
+        "description": "No space left on device. The operation would have caused the server's file system to exceed its limit.",
+        "code": 28
+    },
+    "NFS3ERR_ROFS": {
+        "description": "Read-only file system. A modifying operation was attempted on a read-only file system.",
+        "code": 30
+    },
+    "NFS3ERR_MLINK": {
+        "description": "Too many hard links.",
+        "code": 31
+    },
+    "NFS3ERR_NAMETOOLONG": {
+        "description": "The filename in an operation was too long.",
+        "code": 63
+    },
+    "NFS3ERR_NOTEMPTY": {
+        "description": "An attempt was made to remove a directory that was not empty.",
+        "code": 66
+    },
+    "NFS3ERR_DQUOT": {
+        "description": "Resource (quota) hard limit exceeded. The user's resource limit on the server has been exceeded.",
+        "code": 69
+    },
+    "NFS3ERR_STALE": {
+        "description": "Invalid file handle. The file handle given in the arguments was invalid. The file referred to by that file handle no longer exists or access to it has been revoked.",
+        "code": 70
+    },
+    "NFS3ERR_REMOTE": {
+        "description": "Too many levels of remote in path. The file handle given in the arguments referred to a file on a non-local file system on the server.",
+        "code": 71
+    },
+    "NFS3ERR_BADHANDLE": {
+        "description": "Illegal NFS file handle. The file handle failed internal consistency checks.",
+        "code": 10001
+    },
+    "NFS3ERR_NOT_SYNC": {
+        "description": "Update synchronization mismatch was detected during a SETATTR operation.",
+        "code": 10002
+    },
+    "NFS3ERR_BAD_COOKIE": {
+        "description": "READDIR or READDIRPLUS cookie is stale.",
+        "code": 10003
+    },
+    "NFS3ERR_NOTSUPP": {
+        "description": "Operation is not supported.",
+        "code": 10004
+    },
+    "NFS3ERR_TOOSMALL": {
+        "description": "Buffer or request is too small.",
+        "code": 10005
+    },
+    "NFS3ERR_SERVERFAULT": {
+        "description": "An error occurred on the server which does not map to any of the legal NFS version 3 protocol error values.  The client should translate this into an appropriate error. UNIX clients may choose to translate this to EIO.",
+        "code": 10006
+    },
+    "NFS3ERR_BADTYPE": {
+        "description": "An attempt was made to create an object of a type not supported by the server.",
+        "code": 10007
+    },
+    "NFS3ERR_JUKEBOX": {
+        "description": "The server initiated the request, but was not able to complete it in a timely fashion. The client should wait and then try the request with a new RPC transaction ID. For example, this error should be returned from a server that supports hierarchical storage and receives a request to process a file that has been migrated. In this case, the server should start the immigration process and respond to client with this error.",
+        "code": 10008
+    },
+    "RPC_CANTENCODEARGS": {
+        "description": "Can't encode arguments.",
+        "code": 20001
+    },
+    "RPC_CANTDECODERES": {
+        "description": "Can't decode results.",
+        "code": 20002
+    },
+    "RPC_CANTSEND": {
+        "description": "Failure in sending call.",
+        "code": 20003
+    },
+    "RPC_CANTRECV": {
+        "description": "Failure in receiving result.",
+        "code": 20004
+    },
+    "RPC_TIMEDOUT": {
+        "description": "Call timed.",
+        "code": 20005
+    },
+    "RPC_VERSMISMATCH": {
+        "description": "Rpc versions not compatible.",
+        "code": 20006
+    },
+    "RPC_AUTHERROR": {
+        "description": "Authentication error.",
+        "code": 20007
+    },
+    "RPC_PROGUNAVAIL": {
+        "description": "Program not available.",
+        "code": 20008
+    },
+    "RPC_PROGVERSMISMATCH": {
+        "description": "Program version mismatched.",
+        "code": 20009
+    },
+    "RPC_PROCUNAVAIL": {
+        "description": "Procedure unavailable.",
+        "code": 20010
+    },
+    "RPC_CANTDECODEARGS": {
+        "description": "Decode arguments error.",
+        "code": 20011
+    },
+    "RPC_SYSTEMERROR": {
+        "description": "Generic \"other problem\".",
+        "code": 20012
+    },
+    "RPC_UNKNOWNHOST": {
+        "description": "Unknown host name.",
+        "code": 20013
+    },
+    "RPC_UNKNOWNPROTO": {
+        "description": "Unkown protocol.",
+        "code": 20017
+    },
+    "RPC_PMAPFAILURE": {
+        "description": "The pmapper failed in its call.",
+        "code": 20014
+    },
+    "RPC_PROGNOTREGISTERED": {
+        "description": "Remote program is not registered.",
+        "code": 20015
+    },
+    "RPC_FAILED": {
+        "description": "Unspecified error.",
+        "code": 20016
+    },
+    "NFSC_NOT_MOUNTED": {
+        "description": "Filesystem is not mounted.",
+        "code": 30001
+    },
+    "NFSC_ALREADY_MOUNTED": {
+        "description": "Filesystem is already mounted.",
+        "code": 30002
+    },
+    "NFSC_UNKNOWN_ERROR": {
+        "description": "Unspecified error.",
+        "code": 30003
+    },
+    "NFSC_EGETHOSTNAME": {
+        "description": "Failed to resolve host name.",
+        "code": 30004
+    },
+    "NFSC_EGETHOSTBYNAME": {
+        "description": "Failed to resolve host by name.",
+        "code": 30005
+    }
+}
