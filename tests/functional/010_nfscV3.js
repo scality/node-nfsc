@@ -145,7 +145,7 @@ async.waterfall([
     (dir, filename, next) =>
         describeIt('should ENOENT on file lookup', done => {
             mnt.lookup(dir, filename, (err, fh, obj_attrs, dir_attrs) => {
-                assert.strictEqual(err, 'NFS3ERR_NOENT');
+                assert.strictEqual(err.status, 'NFS3ERR_NOENT');
                 done(next, null);
             });
         }),
@@ -158,7 +158,7 @@ async.waterfall([
     (next) =>
         describeIt('should ENOENT on directory lookup', done => {
             mnt.lookup(root_fh, test_dir, (err, fh, obj_attrs, dir_attrs) => {
-                assert.strictEqual(err, 'NFS3ERR_NOENT');
+                assert.strictEqual(err.status, 'NFS3ERR_NOENT');
                 done(next, null);
             });
         }),
