@@ -18,23 +18,13 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class SetAttr3Worker : public Nan::AsyncWorker {
-
-        Client *client;
-        bool success;
-        char *error;
-        nfs_fh3 obj_fh;
-        const v8::Local<v8::Value>& attrs;
-        const v8::Local<v8::Value>& guard;
-        SETATTR3res res;
-        SETATTR3args args;
+    class SetAttr3Worker : public Procedure3Worker<SETATTR3args, SETATTR3res> {
 
     public:
 
@@ -43,9 +33,13 @@ namespace NFS {
                        const v8::Local<v8::Value> &attrs_,
                        const v8::Local<v8::Value> &guard_,
                        Nan::Callback *callback);
-        ~SetAttr3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(SETATTR3args *a, SETATTR3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_setattr_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

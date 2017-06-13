@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_create3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_sattr3.h"
 #include "node_nfsc_fattr3.h"
 #include "node_nfsc_wcc3.h"
@@ -55,13 +54,8 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
                                   const v8::Local<v8::Value> &mode_,
                                   const v8::Local<v8::Value> &attrs_,
                                   Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0),
-      name(name_),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t) xdr_CREATE3res, callback),
+      name(name_)
 {
     args.where.dir.data.data_val = node::Buffer::Data(parent_fh_);
     args.where.dir.data.data_len = node::Buffer::Length(parent_fh_);
@@ -97,92 +91,72 @@ NFS::Create3Worker::Create3Worker(NFS::Client *client_,
     }
 }
 
-NFS::Create3Worker::~Create3Worker()
+void NFS::Create3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_CREATE3res, (char *) &res);
+    v8::Local<v8::Value> obj_fh;
+    if (res.CREATE3res_u.resok.obj.handle_follows) {
+        obj_fh = Nan::NewBuffer(res.CREATE3res_u.resok.obj.post_op_fh3_u
+                                .handle.data.data_val,
+                                res.CREATE3res_u.resok.obj.post_op_fh3_u
+                                .handle.data.data_len)
+                .ToLocalChecked();
+    } else {
+        obj_fh = Nan::Null();
+    }
+    v8::Local<v8::Object> wcc = Nan::New<v8::Object>();
+    v8::Local<v8::Value> before, after;
+    if (res.CREATE3res_u.resok.dir_wcc.before.attributes_follow)
+        before = node_nfsc_wcc3(res.CREATE3res_u.resok.dir_wcc.before
+                                .pre_op_attr_u.attributes);
+    else
+        before = Nan::Null();
+    if (res.CREATE3res_u.resok.dir_wcc.after.attributes_follow)
+        after = node_nfsc_fattr3(res.CREATE3res_u.resok.dir_wcc.after
+                                 .post_op_attr_u.attributes);
+    else
+        after = Nan::Null();
+    wcc->Set(Nan::New("before").ToLocalChecked(), before);
+    wcc->Set(Nan::New("after").ToLocalChecked(), after);
+
+    v8::Local<v8::Value> obj_attrs;
+    if (res.CREATE3res_u.resok.obj_attributes.attributes_follow)
+        obj_attrs = node_nfsc_fattr3(res.CREATE3res_u.resok.obj_attributes
+                                     .post_op_attr_u.attributes);
+    else
+        obj_attrs = Nan::Null();
+
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        obj_fh,
+        obj_attrs,
+        wcc,
+    };
+    //data stolen by node
+    res.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_val = NULL;
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::Create3Worker::Execute()
+void NFS::Create3Worker::procFailure()
 {
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_create_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
+    v8::Local<v8::Object> wcc = Nan::New<v8::Object>();
+    v8::Local<v8::Value> before, after;
+    if (res.CREATE3res_u.resfail.dir_wcc.before.attributes_follow)
+        before = node_nfsc_wcc3(res.CREATE3res_u.resfail.dir_wcc.before
+                                .pre_op_attr_u.attributes);
+    else
+        before = Nan::Null();
+    if (res.CREATE3res_u.resfail.dir_wcc.after.attributes_follow)
+        after = node_nfsc_fattr3(res.CREATE3res_u.resfail.dir_wcc.after
+                                 .post_op_attr_u.attributes);
+    else
+        after = Nan::Null();
+    wcc->Set(Nan::New("before").ToLocalChecked(), before);
+    wcc->Set(Nan::New("after").ToLocalChecked(), after);
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
+        wcc
+    };
+    callback->Call(2, argv);
 }
 
-void NFS::Create3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Value> obj_fh;
-        if (res.CREATE3res_u.resok.obj.handle_follows) {
-            obj_fh = Nan::NewBuffer(res.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_val,
-                                res.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_len)
-                    .ToLocalChecked();
-        } else {
-            obj_fh = Nan::Null();
-        }
-        v8::Local<v8::Object> wcc = Nan::New<v8::Object>();
-        v8::Local<v8::Value> before, after;
-        if (res.CREATE3res_u.resok.dir_wcc.before.attributes_follow)
-            before = node_nfsc_wcc3(res.CREATE3res_u.resok.dir_wcc.before.pre_op_attr_u.attributes);
-        else
-            before = Nan::Null();
-        if (res.CREATE3res_u.resok.dir_wcc.after.attributes_follow)
-            after = node_nfsc_fattr3(res.CREATE3res_u.resok.dir_wcc.after.post_op_attr_u.attributes);
-        else
-            after = Nan::Null();
-        wcc->Set(Nan::New("before").ToLocalChecked(), before);
-        wcc->Set(Nan::New("after").ToLocalChecked(), after);
-
-        v8::Local<v8::Value> obj_attrs;
-        if (res.CREATE3res_u.resok.obj_attributes.attributes_follow)
-            obj_attrs = node_nfsc_fattr3(res.CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes);
-        else
-            obj_attrs = Nan::Null();
-
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            obj_fh,
-            obj_attrs,
-            wcc,
-        };
-        //data stolen by node
-        res.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_val = NULL;
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Object> wcc = Nan::New<v8::Object>();
-        v8::Local<v8::Value> before, after;
-        if (res.CREATE3res_u.resfail.dir_wcc.before.attributes_follow)
-            before = node_nfsc_wcc3(res.CREATE3res_u.resfail.dir_wcc.before.pre_op_attr_u.attributes);
-        else
-            before = Nan::Null();
-        if (res.CREATE3res_u.resfail.dir_wcc.after.attributes_follow)
-            after = node_nfsc_fattr3(res.CREATE3res_u.resfail.dir_wcc.after.post_op_attr_u.attributes);
-        else
-            after = Nan::Null();
-        wcc->Set(Nan::New("before").ToLocalChecked(), before);
-        wcc->Set(Nan::New("after").ToLocalChecked(), after);
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
-            wcc
-        };
-        callback->Call(2, argv);
-    }
-}
 

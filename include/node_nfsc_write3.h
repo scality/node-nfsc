@@ -18,20 +18,13 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class Write3Worker : public Nan::AsyncWorker {
-
-        Client *client;
-        bool success;
-        char *error;
-        WRITE3res res;
-        WRITE3args args;
+    class Write3Worker : public Procedure3Worker<WRITE3args, WRITE3res> {
 
     public:
 
@@ -42,9 +35,13 @@ namespace NFS {
                      const v8::Local<v8::Value> &stable_,
                      const v8::Local<v8::Value> &data_,
                      Nan::Callback *callback);
-        ~Write3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(WRITE3args *a, WRITE3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_write_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

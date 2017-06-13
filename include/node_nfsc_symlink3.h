@@ -18,22 +18,15 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
-
+#include "node_nfsc_procedure3.h"
 
 namespace NFS {
     class Client;
 
-    class SymLink3Worker : public Nan::AsyncWorker {
+    class SymLink3Worker : public Procedure3Worker<SYMLINK3args, SYMLINK3res> {
 
-        Client *client;
-        bool success;
-        char *error;
         Nan::Utf8String name;
         Nan::Utf8String path;
-        SYMLINK3res res;
-        SYMLINK3args args;
 
     public:
 
@@ -43,9 +36,13 @@ namespace NFS {
                        const v8::Local<v8::Value> &attrs_,
                        const v8::Local<v8::Value> &path_,
                        Nan::Callback *callback);
-        ~SymLink3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(SYMLINK3args *a, SYMLINK3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_symlink_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

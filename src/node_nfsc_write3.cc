@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_write3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 #include "node_nfsc_wcc3.h"
 
@@ -59,12 +58,7 @@ NFS::Write3Worker::Write3Worker(NFS::Client *client_,
                               const v8::Local<v8::Value> &stable_,
                               const v8::Local<v8::Value> &data_,
                               Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t) xdr_WRITE3res, callback)
 {
     args.file.data.data_val = node::Buffer::Data(obj_fh_);
     args.file.data.data_len = node::Buffer::Length(obj_fh_);
@@ -93,86 +87,58 @@ NFS::Write3Worker::Write3Worker(NFS::Client *client_,
     }
 }
 
-NFS::Write3Worker::~Write3Worker()
+void NFS::Write3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_WRITE3res, (char *) &res);
+    char * verf = (char*)malloc(NFS3_WRITEVERFSIZE);
+    memcpy(verf, &res.WRITE3res_u.resok.verf[0], NFS3_WRITEVERFSIZE);
+    v8::Local<v8::Object> obj_attrs = Nan::New<v8::Object>();
+    v8::Local<v8::Value> before, after;
+    if (res.WRITE3res_u.resok.file_wcc.before.attributes_follow)
+        before = node_nfsc_wcc3(res.WRITE3res_u.resok.file_wcc.before
+                                .pre_op_attr_u.attributes);
+    else
+        before = Nan::Null();
+    if (res.WRITE3res_u.resok.file_wcc.after.attributes_follow)
+        after = node_nfsc_fattr3(res.WRITE3res_u.resok.file_wcc.after
+                                 .post_op_attr_u.attributes);
+    else
+        after = Nan::Null();
+    obj_attrs->Set(Nan::New("before").ToLocalChecked(),
+                   before);
+    obj_attrs->Set(Nan::New("after").ToLocalChecked(),
+                   before);
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        Nan::New(res.WRITE3res_u.resok.committed),
+        Nan::New(res.WRITE3res_u.resok.count),
+        Nan::NewBuffer(verf, NFS3_WRITEVERFSIZE).ToLocalChecked(),
+        obj_attrs
+    };
+    //data stolen by node
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::Write3Worker::Execute()
+void NFS::Write3Worker::procFailure()
 {
-    if (error)
-        return;
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_write_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
+    v8::Local<v8::Object> obj_attrs = Nan::New<v8::Object>();
+    v8::Local<v8::Value> before, after;
+    if (res.WRITE3res_u.resfail.file_wcc.before.attributes_follow)
+        before = node_nfsc_wcc3(res.WRITE3res_u.resfail.file_wcc.before
+                                .pre_op_attr_u.attributes);
+    else
+        before = Nan::Null();
+    if (res.WRITE3res_u.resfail.file_wcc.after.attributes_follow)
+        after = node_nfsc_fattr3(res.WRITE3res_u.resfail.file_wcc.after
+                                 .post_op_attr_u.attributes);
+    else
+        after = Nan::Null();
+    obj_attrs->Set(Nan::New("before").ToLocalChecked(),
+                   before);
+    obj_attrs->Set(Nan::New("after").ToLocalChecked(),
+                   before);
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
+        obj_attrs
+    };
+    callback->Call(2, argv);
 }
-
-void NFS::Write3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        char * verf = (char*)malloc(NFS3_WRITEVERFSIZE);
-        memcpy(verf, &res.WRITE3res_u.resok.verf[0], NFS3_WRITEVERFSIZE);
-        v8::Local<v8::Object> obj_attrs = Nan::New<v8::Object>();
-        v8::Local<v8::Value> before, after;
-        if (res.WRITE3res_u.resok.file_wcc.before.attributes_follow)
-            before = node_nfsc_wcc3(res.WRITE3res_u.resok.file_wcc.before.pre_op_attr_u.attributes);
-        else
-            before = Nan::Null();
-        if (res.WRITE3res_u.resok.file_wcc.after.attributes_follow)
-            after = node_nfsc_fattr3(res.WRITE3res_u.resok.file_wcc.after.post_op_attr_u.attributes);
-        else
-            after = Nan::Null();
-        obj_attrs->Set(Nan::New("before").ToLocalChecked(),
-                       before);
-        obj_attrs->Set(Nan::New("after").ToLocalChecked(),
-                       before);
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            Nan::New(res.WRITE3res_u.resok.committed),
-            Nan::New(res.WRITE3res_u.resok.count),
-            Nan::NewBuffer(verf, NFS3_WRITEVERFSIZE).ToLocalChecked(),
-            obj_attrs
-        };
-        //data stolen by node
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Object> obj_attrs = Nan::New<v8::Object>();
-        v8::Local<v8::Value> before, after;
-        if (res.WRITE3res_u.resfail.file_wcc.before.attributes_follow)
-            before = node_nfsc_wcc3(res.WRITE3res_u.resfail.file_wcc.before.pre_op_attr_u.attributes);
-        else
-            before = Nan::Null();
-        if (res.WRITE3res_u.resfail.file_wcc.after.attributes_follow)
-            after = node_nfsc_fattr3(res.WRITE3res_u.resfail.file_wcc.after.post_op_attr_u.attributes);
-        else
-            after = Nan::Null();
-        obj_attrs->Set(Nan::New("before").ToLocalChecked(),
-                       before);
-        obj_attrs->Set(Nan::New("after").ToLocalChecked(),
-                       before);
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
-            obj_attrs
-        };
-        callback->Call(2, argv);
-    }
-}
-

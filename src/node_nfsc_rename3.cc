@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_rename3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 #include "node_nfsc_wcc3.h"
 
@@ -55,14 +54,9 @@ NFS::Rename3Worker::Rename3Worker(NFS::Client *client_,
                                 const v8::Local<v8::Value> &to_fh_,
                                 const v8::Local<v8::Value> &to_name_,
                                 Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0),
+    : Procedure3Worker(client_, (xdrproc_t) xdr_RENAME3res, callback),
       from_name(from_name_),
-      to_name(to_name_),
-      res({}),
-      args({})
+      to_name(to_name_)
 {
     args.from.dir.data.data_val = node::Buffer::Data(from_fh_);
     args.from.dir.data.data_len = node::Buffer::Length(from_fh_);
@@ -72,103 +66,82 @@ NFS::Rename3Worker::Rename3Worker(NFS::Client *client_,
     args.to.name = *to_name;
 }
 
-NFS::Rename3Worker::~Rename3Worker()
+void NFS::Rename3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_RENAME3res, (char *) &res);
+    v8::Local<v8::Object> from_wcc = Nan::New<v8::Object>();
+    v8::Local<v8::Value> from_before, from_after;
+    if (res.RENAME3res_u.resok.fromdir_wcc.before.attributes_follow)
+        from_before = node_nfsc_wcc3(res.RENAME3res_u.resok.fromdir_wcc
+                                     .before.pre_op_attr_u.attributes);
+    else
+        from_before = Nan::Null();
+    if (res.RENAME3res_u.resok.fromdir_wcc.after.attributes_follow)
+        from_after = node_nfsc_fattr3(res.RENAME3res_u.resok.fromdir_wcc
+                                      .after.post_op_attr_u.attributes);
+    else
+        from_after = Nan::Null();
+    from_wcc->Set(Nan::New("before").ToLocalChecked(), from_before);
+    from_wcc->Set(Nan::New("after").ToLocalChecked(), from_after);
+
+    v8::Local<v8::Object> to_wcc = Nan::New<v8::Object>();
+    v8::Local<v8::Value> to_before, to_after;
+    if (res.RENAME3res_u.resok.todir_wcc.before.attributes_follow)
+        to_before = node_nfsc_wcc3(res.RENAME3res_u.resok.todir_wcc
+                                   .before.pre_op_attr_u.attributes);
+    else
+        to_before = Nan::Null();
+    if (res.RENAME3res_u.resok.todir_wcc.after.attributes_follow)
+        to_after = node_nfsc_fattr3(res.RENAME3res_u.resok.todir_wcc
+                                    .after.post_op_attr_u.attributes);
+    else
+        to_after = Nan::Null();
+    to_wcc->Set(Nan::New("before").ToLocalChecked(), to_before);
+    to_wcc->Set(Nan::New("after").ToLocalChecked(), to_after);
+
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        from_wcc,
+        to_wcc,
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::Rename3Worker::Execute()
+void NFS::Rename3Worker::procFailure()
 {
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_rename_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
+    v8::Local<v8::Object> from_wcc = Nan::New<v8::Object>();
+    v8::Local<v8::Value> from_before, from_after;
+    if (res.RENAME3res_u.resfail.fromdir_wcc.before.attributes_follow)
+        from_before = node_nfsc_wcc3(res.RENAME3res_u.resfail.fromdir_wcc
+                                     .before.pre_op_attr_u.attributes);
+    else
+        from_before = Nan::Null();
+    if (res.RENAME3res_u.resfail.fromdir_wcc.after.attributes_follow)
+        from_after = node_nfsc_fattr3(res.RENAME3res_u.resfail.fromdir_wcc
+                                      .after.post_op_attr_u.attributes);
+    else
+        from_after = Nan::Null();
+    from_wcc->Set(Nan::New("before").ToLocalChecked(), from_before);
+    from_wcc->Set(Nan::New("after").ToLocalChecked(), from_after);
+
+    v8::Local<v8::Object> to_wcc = Nan::New<v8::Object>();
+    v8::Local<v8::Value> to_before, to_after;
+    if (res.RENAME3res_u.resfail.todir_wcc.before.attributes_follow)
+        to_before = node_nfsc_wcc3(res.RENAME3res_u.resfail.todir_wcc
+                                   .before.pre_op_attr_u.attributes);
+    else
+        to_before = Nan::Null();
+    if (res.RENAME3res_u.resfail.todir_wcc.after.attributes_follow)
+        to_after = node_nfsc_fattr3(res.RENAME3res_u.resfail.todir_wcc
+                                    .after.post_op_attr_u.attributes);
+    else
+        to_after = Nan::Null();
+    to_wcc->Set(Nan::New("before").ToLocalChecked(), to_before);
+    to_wcc->Set(Nan::New("after").ToLocalChecked(), to_after);
+
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
+        from_wcc,
+        to_wcc,
+    };
+    callback->Call(3, argv);
 }
-
-void NFS::Rename3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Object> from_wcc = Nan::New<v8::Object>();
-        v8::Local<v8::Value> from_before, from_after;
-        if (res.RENAME3res_u.resok.fromdir_wcc.before.attributes_follow)
-            from_before = node_nfsc_wcc3(res.RENAME3res_u.resok.fromdir_wcc.before.pre_op_attr_u.attributes);
-        else
-            from_before = Nan::Null();
-        if (res.RENAME3res_u.resok.fromdir_wcc.after.attributes_follow)
-            from_after = node_nfsc_fattr3(res.RENAME3res_u.resok.fromdir_wcc.after.post_op_attr_u.attributes);
-        else
-            from_after = Nan::Null();
-        from_wcc->Set(Nan::New("before").ToLocalChecked(), from_before);
-        from_wcc->Set(Nan::New("after").ToLocalChecked(), from_after);
-
-        v8::Local<v8::Object> to_wcc = Nan::New<v8::Object>();
-        v8::Local<v8::Value> to_before, to_after;
-        if (res.RENAME3res_u.resok.todir_wcc.before.attributes_follow)
-            to_before = node_nfsc_wcc3(res.RENAME3res_u.resok.todir_wcc.before.pre_op_attr_u.attributes);
-        else
-            to_before = Nan::Null();
-        if (res.RENAME3res_u.resok.todir_wcc.after.attributes_follow)
-            to_after = node_nfsc_fattr3(res.RENAME3res_u.resok.todir_wcc.after.post_op_attr_u.attributes);
-        else
-            to_after = Nan::Null();
-        to_wcc->Set(Nan::New("before").ToLocalChecked(), to_before);
-        to_wcc->Set(Nan::New("after").ToLocalChecked(), to_after);
-
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            from_wcc,
-            to_wcc,
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Object> from_wcc = Nan::New<v8::Object>();
-        v8::Local<v8::Value> from_before, from_after;
-        if (res.RENAME3res_u.resfail.fromdir_wcc.before.attributes_follow)
-            from_before = node_nfsc_wcc3(res.RENAME3res_u.resfail.fromdir_wcc.before.pre_op_attr_u.attributes);
-        else
-            from_before = Nan::Null();
-        if (res.RENAME3res_u.resfail.fromdir_wcc.after.attributes_follow)
-            from_after = node_nfsc_fattr3(res.RENAME3res_u.resfail.fromdir_wcc.after.post_op_attr_u.attributes);
-        else
-            from_after = Nan::Null();
-        from_wcc->Set(Nan::New("before").ToLocalChecked(), from_before);
-        from_wcc->Set(Nan::New("after").ToLocalChecked(), from_after);
-
-        v8::Local<v8::Object> to_wcc = Nan::New<v8::Object>();
-        v8::Local<v8::Value> to_before, to_after;
-        if (res.RENAME3res_u.resfail.todir_wcc.before.attributes_follow)
-            to_before = node_nfsc_wcc3(res.RENAME3res_u.resfail.todir_wcc.before.pre_op_attr_u.attributes);
-        else
-            to_before = Nan::Null();
-        if (res.RENAME3res_u.resfail.todir_wcc.after.attributes_follow)
-            to_after = node_nfsc_fattr3(res.RENAME3res_u.resfail.todir_wcc.after.post_op_attr_u.attributes);
-        else
-            to_after = Nan::Null();
-        to_wcc->Set(Nan::New("before").ToLocalChecked(), to_before);
-        to_wcc->Set(Nan::New("after").ToLocalChecked(), to_after);
-
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
-            from_wcc,
-            to_wcc,
-        };
-        callback->Call(3, argv);
-    }
-}
-

@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_readlink3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
 // (object, callback(err, obj_attr) )
@@ -44,79 +43,45 @@ NAN_METHOD(NFS::Client::ReadLink3) {
 NFS::ReadLink3Worker::ReadLink3Worker(NFS::Client *client_,
                                       const v8::Local<v8::Value> &obj_fh_,
                                       Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(0),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t) xdr_READLINK3res, callback)
 {
     args.symlink.data.data_val = node::Buffer::Data(obj_fh_);
     args.symlink.data.data_len = node::Buffer::Length(obj_fh_);
 }
 
-NFS::ReadLink3Worker::~ReadLink3Worker()
+void NFS::ReadLink3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_READLINK3res, (char *) &res);
+    v8::Local<v8::Value> data;
+    data = Nan::New(res.READLINK3res_u.resok.data)
+            .ToLocalChecked();
+
+    v8::Local<v8::Value> obj_attrs;
+    if (res.READLINK3res_u.resok.symlink_attributes.attributes_follow)
+        obj_attrs = node_nfsc_fattr3(res.READLINK3res_u.resok
+                                     .symlink_attributes.post_op_attr_u
+                                     .attributes);
+    else
+        obj_attrs = Nan::Null();
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        data,
+        obj_attrs,
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::ReadLink3Worker::Execute()
+void NFS::ReadLink3Worker::procFailure()
 {
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_readlink_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
+    v8::Local<v8::Value> obj_attrs;
+    if (res.READLINK3res_u.resfail.symlink_attributes.attributes_follow)
+        obj_attrs = node_nfsc_fattr3(res.READLINK3res_u.resfail
+                                     .symlink_attributes.post_op_attr_u
+                                     .attributes);
+    else
+        obj_attrs = Nan::Null();
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
+        obj_attrs
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
-
-void NFS::ReadLink3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Value> data;
-        data = Nan::New(res.READLINK3res_u.resok.data)
-                .ToLocalChecked();
-
-        v8::Local<v8::Value> obj_attrs;
-        if (res.READLINK3res_u.resok.symlink_attributes.attributes_follow)
-            obj_attrs = node_nfsc_fattr3(res.READLINK3res_u.resok
-                                         .symlink_attributes.post_op_attr_u
-                                         .attributes);
-        else
-            obj_attrs = Nan::Null();
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            data,
-            obj_attrs,
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Value> obj_attrs;
-        if (res.READLINK3res_u.resfail.symlink_attributes.attributes_follow)
-            obj_attrs = node_nfsc_fattr3(res.READLINK3res_u.resfail
-                                         .symlink_attributes.post_op_attr_u
-                                         .attributes);
-        else
-            obj_attrs = Nan::Null();
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked(),
-            obj_attrs
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-}
-

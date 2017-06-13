@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_readdirplus3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
 // (dir, cookie, cookieverf, dircount, maxcount, cb(err, dir_attrs, eof, [{ handle, attrs, cookie, fileid, name}, ... ]))
@@ -78,14 +77,17 @@ readdirplus_entries(READDIRPLUS3res *res)
                   Nan::NewBuffer(buf_fileid, sizeof(fileid3)).ToLocalChecked());
         v8::Local<v8::Value> obj_attrs;
         if (entry->name_attributes.attributes_follow)
-            obj_attrs = node_nfsc_fattr3(entry->name_attributes.post_op_attr_u.attributes);
+            obj_attrs = node_nfsc_fattr3(entry->name_attributes
+                                         .post_op_attr_u.attributes);
         else
             obj_attrs = Nan::Null();
         item->Set(Nan::New("attrs").ToLocalChecked(),
                   obj_attrs);
         item->Set(Nan::New("handle").ToLocalChecked(),
-                  Nan::NewBuffer(entry->name_handle.post_op_fh3_u.handle.data.data_val,
-                                 entry->name_handle.post_op_fh3_u.handle.data.data_len)
+                  Nan::NewBuffer(entry->name_handle.post_op_fh3_u
+                                 .handle.data.data_val,
+                                 entry->name_handle.post_op_fh3_u
+                                 .handle.data.data_len)
                   .ToLocalChecked());
         entry->name_handle.post_op_fh3_u.handle.data.data_val = NULL;
         list->Set(count++, item);
@@ -101,12 +103,7 @@ NFS::ReadDirPlus3Worker::ReadDirPlus3Worker(NFS::Client *client_,
                                             const v8::Local<v8::Value> &dircount_,
                                             const v8::Local<v8::Value> &maxcount_,
                                             Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(NULL),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t) xdr_READDIRPLUS3res, callback)
 {
     args.dir.data.data_val = node::Buffer::Data(dir_fh_);
     args.dir.data.data_len = node::Buffer::Length(dir_fh_);
@@ -126,70 +123,42 @@ NFS::ReadDirPlus3Worker::ReadDirPlus3Worker(NFS::Client *client_,
             Nan::ThrowRangeError("Invalid cookiverf size");
             return;
         }
-        memcpy(&args.cookieverf, node::Buffer::Data(cookieverf_), sizeof(args.cookieverf));
+        memcpy(&args.cookieverf,
+               node::Buffer::Data(cookieverf_),
+               sizeof(args.cookieverf));
     } else {
         memset(&args.cookieverf, 0, sizeof(args.cookieverf));
     }
 }
 
-NFS::ReadDirPlus3Worker::~ReadDirPlus3Worker()
+void NFS::ReadDirPlus3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_READDIRPLUS3res, (char *) &res);
+    char *cookieverfBuf = (char*)malloc(NFS3_COOKIEVERFSIZE);
+    memcpy(cookieverfBuf,
+           &res.READDIRPLUS3res_u.resok.cookieverf[0],
+            NFS3_COOKIEVERFSIZE);
+    v8::Local<v8::Array> entries = readdirplus_entries(&res);
+    v8::Local<v8::Value> dir_attrs;
+    if (res.READDIRPLUS3res_u.resok.dir_attributes.attributes_follow)
+        dir_attrs = node_nfsc_fattr3(res.READDIRPLUS3res_u.resok
+                                     .dir_attributes.post_op_attr_u.attributes);
+    else
+        dir_attrs = Nan::Null();
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        dir_attrs,
+        Nan::NewBuffer(cookieverfBuf,
+        NFS3_COOKIEVERFSIZE).ToLocalChecked(),
+        Nan::New(!!res.READDIRPLUS3res_u.resok.reply.eof),
+        entries,
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::ReadDirPlus3Worker::Execute()
+void NFS::ReadDirPlus3Worker::procFailure()
 {
-    if (error)
-        return;
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_readdirplus_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
-
-}
-
-void NFS::ReadDirPlus3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        char *cookieverfBuf = (char*)malloc(NFS3_COOKIEVERFSIZE);
-        memcpy(cookieverfBuf,
-               &res.READDIRPLUS3res_u.resok.cookieverf[0],
-               NFS3_COOKIEVERFSIZE);
-        v8::Local<v8::Array> entries = readdirplus_entries(&res);
-        v8::Local<v8::Value> dir_attrs;
-        if (res.READDIRPLUS3res_u.resok.dir_attributes.attributes_follow)
-            dir_attrs = node_nfsc_fattr3(res.READDIRPLUS3res_u.resok.dir_attributes.post_op_attr_u.attributes);
-        else
-            dir_attrs = Nan::Null();
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            dir_attrs,
-            Nan::NewBuffer(cookieverfBuf,
-                           NFS3_COOKIEVERFSIZE).ToLocalChecked(),
-            Nan::New(!!res.READDIRPLUS3res_u.resok.reply.eof),
-            entries,
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
-        };
-        callback->Call(1, argv);
-    }
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
+    };
+    callback->Call(1, argv);
 }

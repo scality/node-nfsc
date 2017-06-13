@@ -18,21 +18,15 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class RmDir3Worker : public Nan::AsyncWorker {
+    class RmDir3Worker : public Procedure3Worker<RMDIR3args, RMDIR3res> {
 
-        Client *client;
-        bool success;
-        char *error;
         Nan::Utf8String name;
-        RMDIR3res res;
-        RMDIR3args args;
 
     public:
 
@@ -40,9 +34,13 @@ namespace NFS {
                      const v8::Local<v8::Value> &parent_fh_,
                      const v8::Local<v8::Value> &name_,
                      Nan::Callback *callback);
-        ~RmDir3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
 
+    private:
+
+        clnt_stat xdrProc(RMDIR3args *a, RMDIR3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_rmdir_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

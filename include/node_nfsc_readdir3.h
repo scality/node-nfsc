@@ -18,31 +18,29 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class ReadDir3Worker : public Nan::AsyncWorker {
-
-        Client *client;
-        bool success;
-        char *error;
-        READDIR3res res;
-        READDIR3args args;
+    class ReadDir3Worker : public Procedure3Worker<READDIR3args, READDIR3res> {
 
     public:
 
         ReadDir3Worker(Client *client_,
-                      const v8::Local<v8::Value> &dir_fh_,
-                      const v8::Local<v8::Value> &cookie_,
-                      const v8::Local<v8::Value> &cookieverf_,
-                      const v8::Local<v8::Value> &count_,
-                      Nan::Callback *callback);
-        ~ReadDir3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
+                       const v8::Local<v8::Value> &dir_fh_,
+                       const v8::Local<v8::Value> &cookie_,
+                       const v8::Local<v8::Value> &cookieverf_,
+                       const v8::Local<v8::Value> &count_,
+                       Nan::Callback *callback);
+
+    private:
+
+        clnt_stat xdrProc(READDIR3args *a, READDIR3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_readdir_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
     };
 }

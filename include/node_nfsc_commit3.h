@@ -18,20 +18,13 @@
  */
 #pragma once
 #include <nan.h>
-#include "nfs3.h"
-#include "node_nfsc_port.h"
+#include "node_nfsc_procedure3.h"
 
 
 namespace NFS {
     class Client;
 
-    class Commit3Worker : public Nan::AsyncWorker {
-
-        Client *client;
-        bool success;
-        char *error;
-        COMMIT3res res;
-        COMMIT3args args;
+    class Commit3Worker : public Procedure3Worker<COMMIT3args, COMMIT3res> {
 
     public:
 
@@ -40,9 +33,12 @@ namespace NFS {
                       const v8::Local<v8::Value> &count_,
                       const v8::Local<v8::Value> &offset_,
                       Nan::Callback *callback);
-        ~Commit3Worker() NFSC_OVERRIDE;
-        void Execute() NFSC_OVERRIDE;
-        void HandleOKCallback() NFSC_OVERRIDE;
+    private:
+        clnt_stat xdrProc(COMMIT3args *a, COMMIT3res *r, CLIENT *c) NFSC_OVERRIDE {
+            return nfsproc3_commit_3(a, r, c);
+        }
+        void procSuccess() NFSC_OVERRIDE;
+        void procFailure() NFSC_OVERRIDE;
 
     };
 }

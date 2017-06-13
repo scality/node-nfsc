@@ -18,7 +18,6 @@
  */
 #include "node_nfsc.h"
 #include "node_nfsc_readdir3.h"
-#include "node_nfsc_errors3.h"
 #include "node_nfsc_fattr3.h"
 
 // (dir, cookie, cookieverf, count, callback(err, dir_attrs, eof, [{ cookie, fileid, name}, ... ]))
@@ -45,7 +44,8 @@ NAN_METHOD(NFS::Client::ReadDir3) {
         return;
     NFS::Client* obj = ObjectWrap::Unwrap<NFS::Client>(info.Holder());
     Nan::Callback *callback = new Nan::Callback(info[4].As<v8::Function>());
-    Nan::AsyncQueueWorker(new NFS::ReadDir3Worker(obj, info[0], info[1], info[2], info[3], callback));
+    Nan::AsyncQueueWorker(new NFS::ReadDir3Worker(obj, info[0], info[1],
+                                                  info[2], info[3], callback));
 }
 
 static v8::Local<v8::Array>
@@ -85,12 +85,7 @@ NFS::ReadDir3Worker::ReadDir3Worker(NFS::Client *client_,
                                   const v8::Local<v8::Value> &cookieverf_,
                                   const v8::Local<v8::Value> &count_,
                                   Nan::Callback *callback)
-    : Nan::AsyncWorker(callback),
-      client(client_),
-      success(false),
-      error(NULL),
-      res({}),
-      args({})
+    : Procedure3Worker(client_, (xdrproc_t) xdr_READDIR3res, callback)
 {
     args.dir.data.data_val = node::Buffer::Data(dir_fh_);
     args.dir.data.data_len = node::Buffer::Length(dir_fh_);
@@ -109,64 +104,36 @@ NFS::ReadDir3Worker::ReadDir3Worker(NFS::Client *client_,
             Nan::ThrowRangeError("Invalid cookiverf size");
             return;
         }
-        memcpy(&args.cookieverf, node::Buffer::Data(cookieverf_), sizeof(args.cookieverf));
+        memcpy(&args.cookieverf,
+               node::Buffer::Data(cookieverf_),
+               sizeof(args.cookieverf));
     } else {
         memset(&args.cookieverf, 0, sizeof(args.cookieverf));
     }
 }
 
-NFS::ReadDir3Worker::~ReadDir3Worker()
+void NFS::ReadDir3Worker::procSuccess()
 {
-    Serialize my(client);
-    free(error);
-    clnt_freeres(client->getClient(), (xdrproc_t) xdr_READDIR3res, (char *) &res);
+    v8::Local<v8::Array> entries = readdir_entries(&res);
+    v8::Local<v8::Value> dir_attrs;
+    if (res.READDIR3res_u.resok.dir_attributes.attributes_follow)
+        dir_attrs = node_nfsc_fattr3(res.READDIR3res_u.resok.dir_attributes
+                                     .post_op_attr_u.attributes);
+    else
+        dir_attrs = Nan::Null();
+    v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        dir_attrs,
+        Nan::New(!!res.READDIR3res_u.resok.reply.eof),
+        entries,
+    };
+    callback->Call(sizeof(argv)/sizeof(*argv), argv);
 }
 
-void NFS::ReadDir3Worker::Execute()
+void NFS::ReadDir3Worker::procFailure()
 {
-    if (error)
-        return;
-    if (!client->isMounted()) {
-        NFSC_ASPRINTF(&error, NFSC_NOT_MOUNTED);
-        return;
-    }
-    Serialize my(client);
-    clnt_stat stat;
-    stat = nfsproc3_readdir_3(&args, &res, client->getClient());
-    if (stat != RPC_SUCCESS) {
-        NFSC_ASPRINTF(&error, "%s", rpc_error(stat));
-        return;
-    }
-    if (res.status != NFS3_OK) {
-        NFSC_ASPRINTF(&error, "%s", nfs3_error(res.status));
-        return;
-    }
-    success = true;
-
-}
-
-void NFS::ReadDir3Worker::HandleOKCallback()
-{
-    Nan::HandleScope scope;
-    if (success) {
-        v8::Local<v8::Array> entries = readdir_entries(&res);
-        v8::Local<v8::Value> dir_attrs;
-        if (res.READDIR3res_u.resok.dir_attributes.attributes_follow)
-            dir_attrs = node_nfsc_fattr3(res.READDIR3res_u.resok.dir_attributes.post_op_attr_u.attributes);
-        else
-            dir_attrs = Nan::Null();
-        v8::Local<v8::Value> argv[] = {
-            Nan::Null(),
-            dir_attrs,
-            Nan::New(!!res.READDIR3res_u.resok.reply.eof),
-            entries,
-        };
-        callback->Call(sizeof(argv)/sizeof(*argv), argv);
-    }
-    else {
-        v8::Local<v8::Value> argv[] = {
-            Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
-        };
-        callback->Call(1, argv);
-    }
+    v8::Local<v8::Value> argv[] = {
+        Nan::New(error?error:NFSC_UNKNOWN_ERROR).ToLocalChecked()
+    };
+    callback->Call(1, argv);
 }
