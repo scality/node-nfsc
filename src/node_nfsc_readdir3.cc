@@ -114,6 +114,10 @@ NFS::ReadDir3Worker::ReadDir3Worker(NFS::Client *client_,
 
 void NFS::ReadDir3Worker::procSuccess()
 {
+    char *cookieverfBuf = (char*)malloc(NFS3_COOKIEVERFSIZE);
+    memcpy(cookieverfBuf,
+           &res.READDIR3res_u.resok.cookieverf[0],
+            NFS3_COOKIEVERFSIZE);
     v8::Local<v8::Array> entries = readdir_entries(&res);
     v8::Local<v8::Value> dir_attrs;
     if (res.READDIR3res_u.resok.dir_attributes.attributes_follow)
@@ -124,6 +128,8 @@ void NFS::ReadDir3Worker::procSuccess()
     v8::Local<v8::Value> argv[] = {
         Nan::Null(),
         dir_attrs,
+        Nan::NewBuffer(cookieverfBuf,
+        NFS3_COOKIEVERFSIZE).ToLocalChecked(),
         Nan::New(!!res.READDIR3res_u.resok.reply.eof),
         entries,
     };

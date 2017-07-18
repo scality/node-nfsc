@@ -245,6 +245,32 @@ async.waterfall([
                 done(next, null);
             });
         }),
+    next =>
+        describeIt('should list with readdir', done => {
+            mnt.readdir(root_fh, {}, (err, dir_attributes, cookieverf, eof, entries) => {
+                assert.strictEqual(err, null);
+                assert.strictEqual(typeof(dir_attributes), 'object');
+                assert.strictEqual(typeof(cookieverf), 'object');
+                assert.strictEqual(cookieverf.length, 8);
+                assert.strictEqual(eof, true);
+                assert.strictEqual(typeof(entries), 'object');
+                assert.notEqual(entries.length, 0);
+                done(next, null);
+            });
+        }),
+    next =>
+        describeIt('should list with readdirplus', done => {
+            mnt.readdirplus(root_fh, {}, (err, dir_attributes, cookieverf, eof, entries) => {
+                assert.strictEqual(err, null);
+                assert.strictEqual(typeof(dir_attributes), 'object');
+                assert.strictEqual(typeof(cookieverf), 'object');
+                assert.strictEqual(cookieverf.length, 8);
+                assert.strictEqual(eof, true);
+                assert.strictEqual(typeof(entries), 'object');
+                assert.notEqual(entries.length, 0);
+                done(next, null);
+            });
+        }),
     (next) =>
         describeIt('should unmount the filesystem', done => {
             mnt.unmount(err => {
