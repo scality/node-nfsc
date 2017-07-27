@@ -16,7 +16,7 @@ Install the dependencies ```krb5-multidev``` and ```libkrb5-dev```.
 And then,
 
 ```
-$ npm install --save node-nfsc
+$ npm install --save
 ```
 
 ## Usage
