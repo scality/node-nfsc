@@ -84,6 +84,22 @@ async.waterfall([
             });
         }),
     (root, next) =>
+        describeIt('should stat the filesystem', done =>{
+            mnt.fsstat(root, (err, obj_attrs,
+                              tbytes, fbytes, abytes,
+                              tfiles, ffiles, afiles, invarsec) => {
+                assert.strictEqual(err, null);
+                assert.notEqual(tbytes, 0);
+                assert.notEqual(fbytes, 0);
+                assert.notEqual(abytes, 0);
+                assert.notEqual(tfiles, 0);
+                assert.notEqual(ffiles, 0);
+                assert.notEqual(afiles, 0);
+                assert.notEqual(invarsec, undefined);
+                done(next, null, root);
+            });
+        }),
+    (root, next) =>
         describeIt('should lookup the directory', done =>{
             mnt.lookup(root, test_dir, (err, dir, obj_attrs, dir_attrs) => {
                 assert.strictEqual(err, null);
