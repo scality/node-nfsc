@@ -163,8 +163,10 @@ CLIENT *NFS::Mount3Worker::createNfsClient()
     {
         sock = RPC_ANYSOCK;
         addr = server_addr;
-        if((nfsclient = clntudp_create( &addr, NFS_PROGRAM, NFS_V3, timeout,
-                                        &sock)) == (CLIENT *)0)
+        if((nfsclient = clntudp_bufcreate(&addr, NFS_PROGRAM, NFS_V3, timeout,
+                                          &sock,
+                                          NFSC_UDP_PACKET_SIZE,
+                                          NFSC_UDP_PACKET_SIZE)) == (CLIENT *)0)
         {
             clnt_pcreateerror(const_cast<char*>("nfs_clntudp_create"));
             return(NULL);
