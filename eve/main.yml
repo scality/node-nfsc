@@ -1,0 +1,75 @@
+---
+
+version: "0.2"
+
+branches:
+  user/*, feature/*, improvement/*, bugfix/*, w/*, q/*, hotfix/*:
+    stage: "pre-merge"
+
+
+
+stages:
+  pre-merge:
+    worker:
+      type: "openstack"
+      image: "Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)"
+      flavor: "general1-8"
+    steps:
+    - Git: &git_pull_openstack
+        name: git pull
+        repourl: "%(prop:git_repo)s"
+        mode: full
+        method: clobber
+        shallow: 32
+        retryFetch: True
+        haltOnFailure: True
+
+    - ShellCommand:
+        name: Install node
+        command: |-
+          sudo curl -sL https://deb.nodesource.com/setup_4.x | bash -
+          sudo apt-get install -y nodejs npm
+    - ShellCommand:
+        name: dependencies
+        command: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y gcc-4.9 g++-4.9 \
+                                  krb5-multidev libkrb5-dev \
+                                  rpcbind flex
+    - ShellCommand:
+        name: install NFSd
+        command: |
+          git clone git@github.com:nfs-ganesha/nfs-ganesha.git -b V2.4.3
+          ( cd nfs-ganesha && git submodule update --init )
+          mkdir nfs-ganesha/build
+          ( cd nfs-ganesha/build && cmake  ../src )
+          make -C nfs-ganesha/build -j 5
+          sudo make -C nfs-ganesha/build install
+    - ShellCommand:
+        name: spawn NFSd
+        command: |
+          sudo cp -f tests/ganesha.conf.ci /etc/ganesha/ganesha.conf
+          sudo mkdir -p /artifacts /nfs /var/lib/nfs/ganesha/v4old/node0
+          sudo chown $(id -un):$(id -gn) /nfs
+          sudo ganesha.nfsd -N DEBUG -L /artifacts/ganesha.log
+    - ShellCommand:
+        name: compile
+        env:
+          CC: gcc-4.9
+          CXX: g++-4.9
+        command: |
+          npm install
+    - ShellCommand:
+        name: configure test
+        command: |
+          cp tests/config.json.ci tests/config.json
+    - ShellCommand:
+        name: run tests
+        command: |
+          npm test
+
+    #  TODO: Upload
+    # - type: artifacts-store
+    #   path: /artifacts
+    #   destination: artifacts
